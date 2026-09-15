@@ -1,51 +1,64 @@
-import { useEffect, useState } from 'react'
-import { formatDuration, formatReadyDate, toDatetimeLocalValue, useCountdown } from './useCountdown'
+import { useEffect, useState } from "react";
+import {
+  formatDuration,
+  formatReadyDate,
+  toDatetimeLocalValue,
+  useCountdown,
+} from "./useCountdown";
 
 type TimerCardProps = {
-  storageKey: string
-  name: string
-  image: string
-  cooldownHours: number
-  accent: string
-}
+  storageKey: string;
+  name: string;
+  image: string;
+  cooldownHours: number;
+  accent: string;
+};
 
-export function TimerCard({ storageKey, name, image, cooldownHours, accent }: TimerCardProps) {
+export function TimerCard({
+  storageKey,
+  name,
+  image,
+  cooldownHours,
+  accent,
+}: TimerCardProps) {
   const [readyAt, setReadyAt] = useState<number | null>(() => {
-    const stored = localStorage.getItem(storageKey)
-    return stored ? Number(stored) : null
-  })
-  const [isEditing, setIsEditing] = useState(false)
-  const [draftDate, setDraftDate] = useState('')
+    const stored = localStorage.getItem(storageKey);
+    return stored ? Number(stored) : null;
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftDate, setDraftDate] = useState("");
 
-  const remaining = useCountdown(readyAt)
-  const isReady = readyAt !== null && remaining === 0
+  const remaining = useCountdown(readyAt);
+  const isReady = readyAt !== null && remaining === 0;
 
   useEffect(() => {
-    if (readyAt === null) localStorage.removeItem(storageKey)
-    else localStorage.setItem(storageKey, String(readyAt))
-  }, [readyAt, storageKey])
+    if (readyAt === null) localStorage.removeItem(storageKey);
+    else localStorage.setItem(storageKey, String(readyAt));
+  }, [readyAt, storageKey]);
 
-  const isRunning = readyAt !== null && !isReady
-  const collect = () => setReadyAt(Date.now() + cooldownHours * 3600 * 1000)
-  const reset = () => setReadyAt(null)
+  const isRunning = readyAt !== null && !isReady;
+  const collect = () => setReadyAt(Date.now() + cooldownHours * 3600 * 1000);
+  const reset = () => setReadyAt(null);
 
   const openEditor = () => {
-    setDraftDate(toDatetimeLocalValue(readyAt ?? Date.now() + cooldownHours * 3600 * 1000))
-    setIsEditing(true)
-  }
+    setDraftDate(
+      toDatetimeLocalValue(readyAt ?? Date.now() + cooldownHours * 3600 * 1000),
+    );
+    setIsEditing(true);
+  };
 
   const confirmEditor = () => {
-    const timestamp = new Date(draftDate).getTime()
-    if (!Number.isNaN(timestamp)) setReadyAt(timestamp)
-    setIsEditing(false)
-  }
+    const timestamp = new Date(draftDate).getTime();
+    if (!Number.isNaN(timestamp)) setReadyAt(timestamp);
+    setIsEditing(false);
+  };
 
   return (
     <div
       className="relative flex flex-col items-center gap-4 rounded-2xl border p-6 text-center backdrop-blur-sm transition-shadow"
       style={{
-        borderColor: isReady ? accent : 'rgba(255,255,255,0.08)',
-        background: 'rgba(255,255,255,0.03)',
+        borderColor: isReady ? accent : "rgba(255,255,255,0.08)",
+        background: "rgba(255,255,255,0.03)",
         boxShadow: isReady ? `0 0 24px ${accent}55` : undefined,
       }}
     >
@@ -55,7 +68,15 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
         aria-label={`Set ${name} availability manually`}
         className="absolute top-3 left-3 flex h-6 w-6 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-3.5 w-3.5"
+        >
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
@@ -76,7 +97,11 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
         className="flex h-20 w-20 items-center justify-center rounded-full p-3"
         style={{ background: `${accent}22`, border: `1px solid ${accent}66` }}
       >
-        <img src={image} alt={name} className="h-full w-full object-contain drop-shadow-md" />
+        <img
+          src={image}
+          alt={name}
+          className="h-full w-full object-contain drop-shadow-md"
+        />
       </div>
       <div>
         <h2 className="text-lg font-semibold text-white">{name}</h2>
@@ -89,7 +114,7 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
             type="datetime-local"
             value={draftDate}
             onChange={(e) => setDraftDate(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white [color-scheme:dark]"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white scheme-dark"
           />
           <div className="flex w-full gap-2">
             <button
@@ -103,7 +128,7 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
               type="button"
               onClick={confirmEditor}
               className="flex-1 rounded-xl px-4 py-2 font-medium transition-colors"
-              style={{ background: accent, color: '#0a0716' }}
+              style={{ background: accent, color: "#0a0716" }}
             >
               Save
             </button>
@@ -112,11 +137,20 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
       ) : (
         <>
           <div>
-            <div className="font-mono text-3xl tabular-nums" style={{ color: isReady ? accent : '#e9e6f5' }}>
-              {isReady ? 'Ready!' : remaining === null ? '--:--:--' : formatDuration(remaining)}
+            <div
+              className="font-mono text-3xl tabular-nums"
+              style={{ color: isReady ? accent : "#e9e6f5" }}
+            >
+              {isReady
+                ? "Ready!"
+                : remaining === null
+                  ? "--:--:--"
+                  : formatDuration(remaining)}
             </div>
             {isRunning && readyAt !== null && (
-              <p className="mt-1 text-sm text-white/50">{formatReadyDate(readyAt)}</p>
+              <p className="mt-1 text-sm text-white/50">
+                {formatReadyDate(readyAt)}
+              </p>
             )}
           </div>
 
@@ -126,15 +160,15 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
             disabled={isRunning}
             className="w-full rounded-xl px-4 py-2 font-medium transition-colors disabled:cursor-not-allowed"
             style={{
-              background: isReady ? accent : 'rgba(255,255,255,0.08)',
-              color: isReady ? '#0a0716' : '#e9e6f5',
+              background: isReady ? accent : "rgba(255,255,255,0.08)",
+              color: isReady ? "#0a0716" : "#e9e6f5",
               opacity: isRunning ? 0.4 : 1,
             }}
           >
-            {readyAt === null ? 'Start timer' : 'Collected'}
+            {readyAt === null ? "Start timer" : "Collected"}
           </button>
         </>
       )}
     </div>
-  )
+  );
 }
