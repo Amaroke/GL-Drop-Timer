@@ -21,3 +21,13 @@ export function formatDuration(ms: number) {
   const pad = (n: number) => n.toString().padStart(2, '0')
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
 }
+
+export function formatReadyDate(readyAt: number) {
+  return new Date(readyAt).toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}

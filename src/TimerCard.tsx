@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatDuration, useCountdown } from './useCountdown'
+import { formatDuration, formatReadyDate, useCountdown } from './useCountdown'
 
 type TimerCardProps = {
   storageKey: string
@@ -58,8 +58,15 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
         <p className="text-sm text-white/40">Recharges in {cooldownHours}h</p>
       </div>
 
-      <div className="font-mono text-3xl tabular-nums" style={{ color: isReady ? accent : '#e9e6f5' }}>
-        {isReady ? 'Ready!' : remaining === null ? '--:--:--' : formatDuration(remaining)}
+      <div>
+        <div className="font-mono text-3xl tabular-nums" style={{ color: isReady ? accent : '#e9e6f5' }}>
+          {isReady ? 'Ready!' : remaining === null ? '--:--:--' : formatDuration(remaining)}
+        </div>
+        {isRunning && readyAt !== null && (
+          <p className="mt-1 text-xs text-white/40">
+            Available {formatReadyDate(readyAt)}
+          </p>
+        )}
       </div>
 
       <button
