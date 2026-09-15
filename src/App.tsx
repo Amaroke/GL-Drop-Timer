@@ -1,9 +1,12 @@
+import helmetImg from './assets/helmet.png'
+import starBatteryImg from './assets/star-battery.png'
+import toolCaseImg from './assets/tool-case.png'
 import { TimerCard } from './TimerCard'
 
 const ITEMS = [
-  { storageKey: 'gl-timer-star-battery', name: 'Starbatterie', icon: '🔋', cooldownHours: 11, accent: '#5ec8ff' },
-  { storageKey: 'gl-timer-tool-case', name: 'Boîte à outils', icon: '🧰', cooldownHours: 23, accent: '#ffb85e' },
-  { storageKey: 'gl-timer-helmet', name: 'Casque', icon: '⛑️', cooldownHours: 35, accent: '#c084fc' },
+  { storageKey: 'gl-timer-star-battery', name: 'Starbatterie', image: starBatteryImg, cooldownHours: 11, accent: '#5ec8ff' },
+  { storageKey: 'gl-timer-tool-case', name: 'Boîte à outils', image: toolCaseImg, cooldownHours: 23, accent: '#ffb85e' },
+  { storageKey: 'gl-timer-helmet', name: 'Casque', image: helmetImg, cooldownHours: 35, accent: '#c084fc' },
 ]
 
 function App() {

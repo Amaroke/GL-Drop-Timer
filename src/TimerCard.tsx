@@ -4,12 +4,12 @@ import { formatDuration, useCountdown } from './useCountdown'
 type TimerCardProps = {
   storageKey: string
   name: string
-  icon: string
+  image: string
   cooldownHours: number
   accent: string
 }
 
-export function TimerCard({ storageKey, name, icon, cooldownHours, accent }: TimerCardProps) {
+export function TimerCard({ storageKey, name, image, cooldownHours, accent }: TimerCardProps) {
   const [readyAt, setReadyAt] = useState<number | null>(() => {
     const stored = localStorage.getItem(storageKey)
     return stored ? Number(stored) : null
@@ -35,10 +35,10 @@ export function TimerCard({ storageKey, name, icon, cooldownHours, accent }: Tim
       }}
     >
       <div
-        className="flex h-16 w-16 items-center justify-center rounded-full text-3xl"
+        className="flex h-20 w-20 items-center justify-center rounded-full p-3"
         style={{ background: `${accent}22`, border: `1px solid ${accent}66` }}
       >
-        {icon}
+        <img src={image} alt={name} className="h-full w-full object-contain drop-shadow-md" />
       </div>
       <div>
         <h2 className="text-lg font-semibold text-white">{name}</h2>
