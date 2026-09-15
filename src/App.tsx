@@ -4,9 +4,9 @@ import toolCaseImg from './assets/tool-case.png'
 import { TimerCard } from './TimerCard'
 
 const ITEMS = [
-  { storageKey: 'gl-timer-star-battery', name: 'Starbatterie', image: starBatteryImg, cooldownHours: 11, accent: '#5ec8ff' },
-  { storageKey: 'gl-timer-tool-case', name: 'Boîte à outils', image: toolCaseImg, cooldownHours: 23, accent: '#ffb85e' },
-  { storageKey: 'gl-timer-helmet', name: 'Casque', image: helmetImg, cooldownHours: 35, accent: '#c084fc' },
+  { storageKey: 'gl-timer-star-battery', name: 'Star Battery', image: starBatteryImg, cooldownHours: 11, accent: '#5ec8ff' },
+  { storageKey: 'gl-timer-tool-case', name: 'Tool Case', image: toolCaseImg, cooldownHours: 23, accent: '#ffb85e' },
+  { storageKey: 'gl-timer-helmet', name: 'Helmet', image: helmetImg, cooldownHours: 35, accent: '#c084fc' },
 ]
 
 function App() {
@@ -15,7 +15,7 @@ function App() {
       <header className="mb-10 text-center">
         <h1 className="text-3xl font-bold text-white sm:text-4xl">GL Drop Timer</h1>
         <p className="mt-2 text-white/50">
-          Suis le temps de recharge de tes objets gratuits Galaxy Life
+          Track the cooldown of your free Galaxy Life items
         </p>
       </header>
 
@@ -26,7 +26,7 @@ function App() {
       </main>
 
       <footer className="mt-12 text-center text-sm text-white/30">
-        Les timers sont sauvegardés dans ton navigateur.
+        Timers are saved in your browser.
       </footer>
     </div>
   )

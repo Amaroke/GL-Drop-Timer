@@ -42,11 +42,11 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
       </div>
       <div>
         <h2 className="text-lg font-semibold text-white">{name}</h2>
-        <p className="text-sm text-white/40">Recharge en {cooldownHours} h</p>
+        <p className="text-sm text-white/40">Recharges in {cooldownHours}h</p>
       </div>
 
       <div className="font-mono text-3xl tabular-nums" style={{ color: isReady ? accent : '#e9e6f5' }}>
-        {isReady ? 'Prêt !' : remaining === null ? '--:--:--' : formatDuration(remaining)}
+        {isReady ? 'Ready!' : remaining === null ? '--:--:--' : formatDuration(remaining)}
       </div>
 
       <button
@@ -58,7 +58,7 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
           color: isReady ? '#0a0716' : '#e9e6f5',
         }}
       >
-        {readyAt === null ? 'Démarrer le timer' : "J'ai récupéré l'objet"}
+        {readyAt === null ? 'Start timer' : 'Collected'}
       </button>
     </div>
   )
