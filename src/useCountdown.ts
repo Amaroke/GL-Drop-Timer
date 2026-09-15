@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 
 export function useCountdown(readyAt: number | null) {
-  const [now, setNow] = useState(() => Date.now())
+  const [, forceTick] = useState(0)
 
   useEffect(() => {
     if (readyAt === null) return
-    const id = setInterval(() => setNow(Date.now()), 1000)
+    const id = setInterval(() => forceTick((t) => t + 1), 1000)
     return () => clearInterval(id)
   }, [readyAt])
 
   if (readyAt === null) return null
-  return Math.max(0, readyAt - now)
+  return Math.max(0, readyAt - Date.now())
 }
 
 export function formatDuration(ms: number) {
