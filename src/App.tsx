@@ -11,7 +11,7 @@ const ITEMS = [
 
 function App() {
   return (
-    <div className="mx-auto flex min-h-svh max-w-4xl flex-col items-center px-6 py-12">
+    <div className="mx-auto flex min-h-svh max-w-4xl flex-col items-center justify-center px-6 py-12">
       <header className="mb-10 text-center">
         <h1 className="text-3xl font-bold text-white sm:text-4xl">GL Drop Timer</h1>
         <p className="mt-2 text-white/50">
