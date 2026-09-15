@@ -63,9 +63,7 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
           {isReady ? 'Ready!' : remaining === null ? '--:--:--' : formatDuration(remaining)}
         </div>
         {isRunning && readyAt !== null && (
-          <p className="mt-1 text-xs text-white/40">
-            Available {formatReadyDate(readyAt)}
-          </p>
+          <p className="mt-1 text-sm text-white/50">{formatReadyDate(readyAt)}</p>
         )}
       </div>
 
