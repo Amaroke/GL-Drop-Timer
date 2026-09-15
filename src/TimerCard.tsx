@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatDuration, formatReadyDate, useCountdown } from './useCountdown'
+import { formatDuration, formatReadyDate, toDatetimeLocalValue, useCountdown } from './useCountdown'
 
 type TimerCardProps = {
   storageKey: string
@@ -14,6 +14,8 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
     const stored = localStorage.getItem(storageKey)
     return stored ? Number(stored) : null
   })
+  const [isEditing, setIsEditing] = useState(false)
+  const [draftDate, setDraftDate] = useState('')
 
   const remaining = useCountdown(readyAt)
   const isReady = readyAt !== null && remaining === 0
@@ -27,6 +29,17 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
   const collect = () => setReadyAt(Date.now() + cooldownHours * 3600 * 1000)
   const reset = () => setReadyAt(null)
 
+  const openEditor = () => {
+    setDraftDate(toDatetimeLocalValue(readyAt ?? Date.now() + cooldownHours * 3600 * 1000))
+    setIsEditing(true)
+  }
+
+  const confirmEditor = () => {
+    const timestamp = new Date(draftDate).getTime()
+    if (!Number.isNaN(timestamp)) setReadyAt(timestamp)
+    setIsEditing(false)
+  }
+
   return (
     <div
       className="relative flex flex-col items-center gap-4 rounded-2xl border p-6 text-center backdrop-blur-sm transition-shadow"
@@ -36,7 +49,16 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
         boxShadow: isReady ? `0 0 24px ${accent}55` : undefined,
       }}
     >
-      {readyAt !== null && (
+      <button
+        type="button"
+        onClick={openEditor}
+        aria-label={`Set ${name} availability manually`}
+        className="absolute top-3 left-3 flex h-6 w-6 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+      >
+        ⚙
+      </button>
+
+      {readyAt !== null && !isEditing && (
         <button
           type="button"
           onClick={reset}
@@ -58,28 +80,58 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
         <p className="text-sm text-white/40">Recharges in {cooldownHours}h</p>
       </div>
 
-      <div>
-        <div className="font-mono text-3xl tabular-nums" style={{ color: isReady ? accent : '#e9e6f5' }}>
-          {isReady ? 'Ready!' : remaining === null ? '--:--:--' : formatDuration(remaining)}
+      {isEditing ? (
+        <div className="flex w-full flex-col items-center gap-2">
+          <input
+            type="datetime-local"
+            value={draftDate}
+            onChange={(e) => setDraftDate(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white [color-scheme:dark]"
+          />
+          <div className="flex w-full gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="flex-1 rounded-xl bg-white/8 px-4 py-2 font-medium text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmEditor}
+              className="flex-1 rounded-xl px-4 py-2 font-medium transition-colors"
+              style={{ background: accent, color: '#0a0716' }}
+            >
+              Save
+            </button>
+          </div>
         </div>
-        {isRunning && readyAt !== null && (
-          <p className="mt-1 text-sm text-white/50">{formatReadyDate(readyAt)}</p>
-        )}
-      </div>
+      ) : (
+        <>
+          <div>
+            <div className="font-mono text-3xl tabular-nums" style={{ color: isReady ? accent : '#e9e6f5' }}>
+              {isReady ? 'Ready!' : remaining === null ? '--:--:--' : formatDuration(remaining)}
+            </div>
+            {isRunning && readyAt !== null && (
+              <p className="mt-1 text-sm text-white/50">{formatReadyDate(readyAt)}</p>
+            )}
+          </div>
 
-      <button
-        type="button"
-        onClick={collect}
-        disabled={isRunning}
-        className="w-full rounded-xl px-4 py-2 font-medium transition-colors disabled:cursor-not-allowed"
-        style={{
-          background: isReady ? accent : 'rgba(255,255,255,0.08)',
-          color: isReady ? '#0a0716' : '#e9e6f5',
-          opacity: isRunning ? 0.4 : 1,
-        }}
-      >
-        {readyAt === null ? 'Start timer' : 'Collected'}
-      </button>
+          <button
+            type="button"
+            onClick={collect}
+            disabled={isRunning}
+            className="w-full rounded-xl px-4 py-2 font-medium transition-colors disabled:cursor-not-allowed"
+            style={{
+              background: isReady ? accent : 'rgba(255,255,255,0.08)',
+              color: isReady ? '#0a0716' : '#e9e6f5',
+              opacity: isRunning ? 0.4 : 1,
+            }}
+          >
+            {readyAt === null ? 'Start timer' : 'Collected'}
+          </button>
+        </>
+      )}
     </div>
   )
 }
