@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #1b1436 0%, #0a0716 55%, #050309 100%);
+  min-height: 100svh;
+  color: #e9e6f5;
+  font-family: var(--font-sans);
+}
