@@ -41,7 +41,7 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
           type="button"
           onClick={reset}
           aria-label={`Reset ${name} timer`}
-          className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+          className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full text-red-500/70 transition-colors hover:bg-red-500/10 hover:text-red-500"
         >
           ✕
         </button>
