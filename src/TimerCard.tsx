@@ -23,7 +23,9 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
     else localStorage.setItem(storageKey, String(readyAt))
   }, [readyAt, storageKey])
 
+  const isRunning = readyAt !== null && !isReady
   const collect = () => setReadyAt(Date.now() + cooldownHours * 3600 * 1000)
+  const reset = () => setReadyAt(null)
 
   return (
     <div
@@ -34,6 +36,17 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
         boxShadow: isReady ? `0 0 24px ${accent}55` : undefined,
       }}
     >
+      {readyAt !== null && (
+        <button
+          type="button"
+          onClick={reset}
+          aria-label={`Reset ${name} timer`}
+          className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
+        >
+          ✕
+        </button>
+      )}
+
       <div
         className="flex h-20 w-20 items-center justify-center rounded-full p-3"
         style={{ background: `${accent}22`, border: `1px solid ${accent}66` }}
@@ -52,10 +65,12 @@ export function TimerCard({ storageKey, name, image, cooldownHours, accent }: Ti
       <button
         type="button"
         onClick={collect}
-        className="w-full rounded-xl px-4 py-2 font-medium transition-colors"
+        disabled={isRunning}
+        className="w-full rounded-xl px-4 py-2 font-medium transition-colors disabled:cursor-not-allowed"
         style={{
           background: isReady ? accent : 'rgba(255,255,255,0.08)',
           color: isReady ? '#0a0716' : '#e9e6f5',
+          opacity: isRunning ? 0.4 : 1,
         }}
       >
         {readyAt === null ? 'Start timer' : 'Collected'}
