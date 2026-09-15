@@ -23,11 +23,13 @@ export function formatDuration(ms: number) {
 }
 
 export function formatReadyDate(readyAt: number) {
-  return new Date(readyAt).toLocaleString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  const date = new Date(readyAt)
+  const roundedMinutes = Math.ceil(date.getMinutes() / 15) * 15
+  date.setMinutes(roundedMinutes, 0, 0)
+
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const time = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+
+  return `${day}/${month} ~${time}`
 }
