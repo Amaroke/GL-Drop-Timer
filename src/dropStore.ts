@@ -7,7 +7,9 @@ export function createLocalStorageDropStore(): DropStore {
   return {
     get(key) {
       const stored = localStorage.getItem(key);
-      return stored ? Number(stored) : null;
+      if (!stored) return null;
+      const readyAt = Number(stored);
+      return Number.isFinite(readyAt) ? readyAt : null;
     },
     set(key, readyAt) {
       if (readyAt === null) localStorage.removeItem(key);

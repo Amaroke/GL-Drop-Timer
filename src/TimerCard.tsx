@@ -29,6 +29,7 @@ export function TimerCard({
   const [readyAt, setReadyAt] = useState<number | null>(() => store.get(storageKey));
   const [isEditing, setIsEditing] = useState(false);
   const [draftDate, setDraftDate] = useState("");
+  const [editorError, setEditorError] = useState<string | null>(null);
 
   const remaining = useCountdown(readyAt, now);
   const isReady = readyAt !== null && remaining === 0;
@@ -43,13 +44,23 @@ export function TimerCard({
 
   const openEditor = () => {
     setDraftDate(toDatetimeLocalValue(readyAt ?? now() + cooldownHours * 3600 * 1000));
+    setEditorError(null);
     setIsEditing(true);
+  };
+
+  const closeEditor = () => {
+    setEditorError(null);
+    setIsEditing(false);
   };
 
   const confirmEditor = () => {
     const timestamp = new Date(draftDate).getTime();
-    if (!Number.isNaN(timestamp)) setReadyAt(timestamp);
-    setIsEditing(false);
+    if (!Number.isFinite(timestamp)) {
+      setEditorError("Invalid date. Enter a valid date and time.");
+      return;
+    }
+    setReadyAt(timestamp);
+    closeEditor();
   };
 
   return (
@@ -111,12 +122,18 @@ export function TimerCard({
             type="datetime-local"
             value={draftDate}
             onChange={(e) => setDraftDate(e.target.value)}
+            aria-invalid={editorError !== null}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white scheme-dark"
           />
+          {editorError && (
+            <p role="alert" className="text-sm text-red-400">
+              {editorError}
+            </p>
+          )}
           <div className="flex w-full gap-2">
             <button
               type="button"
-              onClick={() => setIsEditing(false)}
+              onClick={closeEditor}
               className="flex-1 rounded-xl bg-white/8 px-4 py-2 font-medium text-white transition-colors"
             >
               Cancel
