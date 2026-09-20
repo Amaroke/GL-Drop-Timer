@@ -30,6 +30,7 @@ export function TimerCard({
   const [isEditing, setIsEditing] = useState(false);
   const [draftDate, setDraftDate] = useState("");
   const [editorError, setEditorError] = useState<string | null>(null);
+  const [isConfirmingReset, setIsConfirmingReset] = useState(false);
 
   const remaining = useCountdown(readyAt, now);
   const isReady = readyAt !== null && remaining === 0;
@@ -40,9 +41,15 @@ export function TimerCard({
 
   const isRunning = readyAt !== null && !isReady;
   const collect = () => setReadyAt(now() + cooldownHours * 3600 * 1000);
-  const reset = () => setReadyAt(null);
+  const askResetConfirmation = () => setIsConfirmingReset(true);
+  const cancelReset = () => setIsConfirmingReset(false);
+  const confirmReset = () => {
+    setReadyAt(null);
+    setIsConfirmingReset(false);
+  };
 
   const openEditor = () => {
+    setIsConfirmingReset(false);
     setDraftDate(toDatetimeLocalValue(readyAt ?? now() + cooldownHours * 3600 * 1000));
     setEditorError(null);
     setIsEditing(true);
@@ -94,10 +101,10 @@ export function TimerCard({
         </svg>
       </button>
 
-      {readyAt !== null && !isEditing && (
+      {readyAt !== null && !isEditing && !isConfirmingReset && (
         <button
           type="button"
-          onClick={reset}
+          onClick={askResetConfirmation}
           aria-label={`Reset ${name} timer`}
           className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full text-red-500/70 transition-colors hover:bg-red-500/10 hover:text-red-500"
         >
@@ -162,19 +169,42 @@ export function TimerCard({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={collect}
-            disabled={isRunning}
-            className="w-full rounded-xl px-4 py-2 font-medium transition-colors disabled:cursor-not-allowed"
-            style={{
-              background: isReady ? accent : "rgba(255,255,255,0.08)",
-              color: isReady ? "#0a0716" : "#e9e6f5",
-              opacity: isRunning ? 0.4 : 1,
-            }}
-          >
-            {readyAt === null ? "Start timer" : "Collected"}
-          </button>
+          {isConfirmingReset ? (
+            <div role="alert" className="flex w-full flex-col items-center gap-2">
+              <p className="text-sm text-white/70">Reset this timer?</p>
+              <div className="flex w-full gap-2">
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={cancelReset}
+                  className="flex-1 rounded-xl bg-white/8 px-4 py-2 font-medium text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmReset}
+                  className="flex-1 rounded-xl bg-red-500 px-4 py-2 font-medium text-white transition-colors"
+                >
+                  Confirm reset
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={collect}
+              disabled={isRunning}
+              className="w-full rounded-xl px-4 py-2 font-medium transition-colors disabled:cursor-not-allowed"
+              style={{
+                background: isReady ? accent : "rgba(255,255,255,0.08)",
+                color: isReady ? "#0a0716" : "#e9e6f5",
+                opacity: isRunning ? 0.4 : 1,
+              }}
+            >
+              {readyAt === null ? "Start timer" : "Collected"}
+            </button>
+          )}
         </>
       )}
     </div>
