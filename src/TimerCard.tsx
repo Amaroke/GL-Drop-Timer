@@ -39,6 +39,15 @@ export function TimerCard({
     store.set(storageKey, readyAt);
   }, [readyAt, storageKey, store]);
 
+  useEffect(
+    () =>
+      store.subscribe(storageKey, () => {
+        setReadyAt(store.get(storageKey));
+        setIsConfirmingReset(false);
+      }),
+    [storageKey, store],
+  );
+
   const isRunning = readyAt !== null && !isReady;
   const collect = () => setReadyAt(now() + cooldownHours * 3600 * 1000);
   const askResetConfirmation = () => setIsConfirmingReset(true);
