@@ -1,13 +1,18 @@
 import type { DropStore } from "./dropStore";
 import { DROPS } from "./drops";
 import { TimerCard } from "./TimerCard";
+import { useReadyDropTitle } from "./useReadyDropTitle";
 
 type AppProps = {
   store: DropStore;
   now: () => number;
 };
 
+const STORAGE_KEYS = DROPS.map((drop) => drop.storageKey);
+
 function App({ store, now }: AppProps) {
+  useReadyDropTitle(store, STORAGE_KEYS, now);
+
   return (
     <div className="mx-auto flex min-h-svh max-w-4xl flex-col items-center justify-center px-6 py-12">
       <header className="mb-10 text-center">
