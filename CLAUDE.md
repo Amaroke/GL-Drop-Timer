@@ -1,18 +1,18 @@
 ## Git
 
-Après chaque commit créé par /implement, push la branche courante sur origin sans demander confirmation. Ne jamais push sur main.
+After each commit created by /implement, push the current branch to origin without asking for confirmation. Never push to main.
 
-## Fin d'un /implement
+## End of an /implement
 
-Une fois le commit poussé et la revue faite, dans cet ordre :
+Once the commit is pushed and the review is done, in this order:
 
-1. Aligner les issues GitHub : cocher les critères d'acceptation remplis dans le corps de l'issue traitée, commenter avec le lien du commit ou de la branche, mettre à jour les labels selon `docs/agents/triage-labels.md`, et retirer la mention "Blocked by" des issues débloquées. Ne pas fermer l'issue, elle se ferme au merge de la PR.
-2. Synchroniser les branches : `git fetch --prune`, mettre main à jour avec `git pull --ff-only`, supprimer les branches locales dont l'upstream a disparu et qui sont déjà mergées (vérifier le diff avant de supprimer).
-3. Choisir la suite :
-   - s'il existe une issue ouverte et débloquée liée à celle qui vient d'être traitée (même parent, ou débloquée par elle), la proposer à l'utilisateur et, s'il accepte, créer sa branche depuis main à jour
-   - sinon, se replacer sur main à jour
+1. Align the GitHub issues: tick the fulfilled acceptance criteria in the body of the issue that was worked on, comment with the link to the commit or the branch, update the labels according to `docs/agents/triage-labels.md`, and remove the "Blocked by" mention from the issues that are now unblocked. Do not close the issue, it closes when the PR is merged.
+2. Synchronize the branches: `git fetch --prune`, update main with `git pull --ff-only`, delete the local branches whose upstream is gone and that are already merged (check the diff before deleting).
+3. Pick what comes next:
+   - if there is an open, unblocked issue related to the one just handled (same parent, or unblocked by it), propose it to the user and, if they accept, create its branch from the up-to-date main
+   - otherwise, go back to the up-to-date main
 
-Ne jamais supprimer une branche non mergée ni pousser sur main.
+Never delete an unmerged branch or push to main.
 
 ## Agent skills
 
