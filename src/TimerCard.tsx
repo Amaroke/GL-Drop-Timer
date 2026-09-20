@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { DropStore } from "./dropStore";
 import {
   formatDuration,
   formatReadyDate,
@@ -12,6 +13,8 @@ type TimerCardProps = {
   image: string;
   cooldownHours: number;
   accent: string;
+  store: DropStore;
+  now: () => number;
 };
 
 export function TimerCard({
@@ -20,29 +23,29 @@ export function TimerCard({
   image,
   cooldownHours,
   accent,
+  store,
+  now,
 }: TimerCardProps) {
-  const [readyAt, setReadyAt] = useState<number | null>(() => {
-    const stored = localStorage.getItem(storageKey);
-    return stored ? Number(stored) : null;
-  });
+  const [readyAt, setReadyAt] = useState<number | null>(() =>
+    store.get(storageKey),
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [draftDate, setDraftDate] = useState("");
 
-  const remaining = useCountdown(readyAt);
+  const remaining = useCountdown(readyAt, now);
   const isReady = readyAt !== null && remaining === 0;
 
   useEffect(() => {
-    if (readyAt === null) localStorage.removeItem(storageKey);
-    else localStorage.setItem(storageKey, String(readyAt));
-  }, [readyAt, storageKey]);
+    store.set(storageKey, readyAt);
+  }, [readyAt, storageKey, store]);
 
   const isRunning = readyAt !== null && !isReady;
-  const collect = () => setReadyAt(Date.now() + cooldownHours * 3600 * 1000);
+  const collect = () => setReadyAt(now() + cooldownHours * 3600 * 1000);
   const reset = () => setReadyAt(null);
 
   const openEditor = () => {
     setDraftDate(
-      toDatetimeLocalValue(readyAt ?? Date.now() + cooldownHours * 3600 * 1000),
+      toDatetimeLocalValue(readyAt ?? now() + cooldownHours * 3600 * 1000),
     );
     setIsEditing(true);
   };
@@ -55,6 +58,8 @@ export function TimerCard({
 
   return (
     <div
+      role="group"
+      aria-label={name}
       className="relative flex flex-col items-center gap-4 rounded-2xl border p-6 text-center backdrop-blur-sm transition-shadow"
       style={{
         borderColor: isReady ? accent : "rgba(255,255,255,0.08)",

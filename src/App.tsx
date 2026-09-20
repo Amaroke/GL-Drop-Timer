@@ -1,15 +1,13 @@
-import helmetImg from './assets/helmet.png'
-import starBatteryImg from './assets/star-battery.png'
-import toolCaseImg from './assets/tool-case.png'
+import type { DropStore } from './dropStore'
+import { DROPS } from './drops'
 import { TimerCard } from './TimerCard'
 
-const ITEMS = [
-  { storageKey: 'gl-timer-star-battery', name: 'Star Battery', image: starBatteryImg, cooldownHours: 11, accent: '#5ec8ff' },
-  { storageKey: 'gl-timer-tool-case', name: 'Tool Case', image: toolCaseImg, cooldownHours: 23, accent: '#ffb85e' },
-  { storageKey: 'gl-timer-helmet', name: 'Helmet', image: helmetImg, cooldownHours: 35, accent: '#c084fc' },
-]
+type AppProps = {
+  store: DropStore
+  now: () => number
+}
 
-function App() {
+function App({ store, now }: AppProps) {
   return (
     <div className="mx-auto flex min-h-svh max-w-4xl flex-col items-center justify-center px-6 py-12">
       <header className="mb-10 text-center">
@@ -20,8 +18,8 @@ function App() {
       </header>
 
       <main className="grid w-full grid-cols-1 gap-6 sm:grid-cols-3">
-        {ITEMS.map((item) => (
-          <TimerCard key={item.storageKey} {...item} />
+        {DROPS.map((drop) => (
+          <TimerCard key={drop.storageKey} {...drop} store={store} now={now} />
         ))}
       </main>
 
