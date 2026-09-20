@@ -97,6 +97,62 @@ describe("App", () => {
     });
   });
 
+  describe("reset confirmation", () => {
+    async function startAndPressReset(name: string) {
+      await userEvent.click(card(name).getByRole("button", { name: "Start timer" }));
+      await userEvent.click(card(name).getByRole("button", { name: `Reset ${name} timer` }));
+    }
+
+    it("asks for confirmation and keeps the Ready date until confirmed", async () => {
+      const store = createMemoryDropStore();
+      render(<App store={store} now={() => NOW} />);
+
+      await startAndPressReset("Star Battery");
+
+      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      expect(store.get("gl-timer-star-battery")).toBe(NOW + 11 * 3600 * 1000);
+
+      expect(card("Star Battery").getByText(/reset this timer\?/i)).toBeInTheDocument();
+      expect(card("Star Battery").getByRole("button", { name: "Confirm reset" })).toBeVisible();
+      expect(card("Star Battery").getByRole("button", { name: "Cancel" })).toBeVisible();
+    });
+
+    it("clears the Ready date when the player confirms", async () => {
+      const store = createMemoryDropStore();
+      render(<App store={store} now={() => NOW} />);
+      await startAndPressReset("Star Battery");
+
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Confirm reset" }));
+
+      expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
+      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
+      expect(card("Star Battery").queryByRole("button", { name: "Confirm reset" })).toBeNull();
+      expect(store.get("gl-timer-star-battery")).toBeNull();
+    });
+
+    it("keeps the Ready date when the player cancels", async () => {
+      const store = createMemoryDropStore();
+      render(<App store={store} now={() => NOW} />);
+      await startAndPressReset("Star Battery");
+
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Cancel" }));
+
+      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      expect(card("Star Battery").queryByRole("button", { name: "Confirm reset" })).toBeNull();
+      expect(store.get("gl-timer-star-battery")).toBe(NOW + 11 * 3600 * 1000);
+    });
+
+    it("only asks for the Drop whose reset was pressed", async () => {
+      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      await userEvent.click(card("Tool Case").getByRole("button", { name: "Start timer" }));
+
+      await startAndPressReset("Star Battery");
+
+      expect(card("Tool Case").queryByRole("button", { name: "Confirm reset" })).toBeNull();
+      expect(card("Tool Case").getByText("23:00:00")).toBeInTheDocument();
+    });
+  });
+
   describe("clock jumps", () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
