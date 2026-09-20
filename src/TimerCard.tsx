@@ -26,9 +26,7 @@ export function TimerCard({
   store,
   now,
 }: TimerCardProps) {
-  const [readyAt, setReadyAt] = useState<number | null>(() =>
-    store.get(storageKey),
-  );
+  const [readyAt, setReadyAt] = useState<number | null>(() => store.get(storageKey));
   const [isEditing, setIsEditing] = useState(false);
   const [draftDate, setDraftDate] = useState("");
 
@@ -44,9 +42,7 @@ export function TimerCard({
   const reset = () => setReadyAt(null);
 
   const openEditor = () => {
-    setDraftDate(
-      toDatetimeLocalValue(readyAt ?? now() + cooldownHours * 3600 * 1000),
-    );
+    setDraftDate(toDatetimeLocalValue(readyAt ?? now() + cooldownHours * 3600 * 1000));
     setIsEditing(true);
   };
 
@@ -102,11 +98,7 @@ export function TimerCard({
         className="flex h-20 w-20 items-center justify-center rounded-full p-3"
         style={{ background: `${accent}22`, border: `1px solid ${accent}66` }}
       >
-        <img
-          src={image}
-          alt={name}
-          className="h-full w-full object-contain drop-shadow-md"
-        />
+        <img src={image} alt={name} className="h-full w-full object-contain drop-shadow-md" />
       </div>
       <div>
         <h2 className="text-lg font-semibold text-white">{name}</h2>
@@ -146,16 +138,10 @@ export function TimerCard({
               className="font-mono text-3xl tabular-nums"
               style={{ color: isReady ? accent : "#e9e6f5" }}
             >
-              {isReady
-                ? "Ready!"
-                : remaining === null
-                  ? "--:--:--"
-                  : formatDuration(remaining)}
+              {isReady ? "Ready!" : remaining === null ? "--:--:--" : formatDuration(remaining)}
             </div>
             {isRunning && readyAt !== null && (
-              <p className="mt-1 text-sm text-white/50">
-                {formatReadyDate(readyAt)}
-              </p>
+              <p className="mt-1 text-sm text-white/50">{formatReadyDate(readyAt)}</p>
             )}
           </div>
 
