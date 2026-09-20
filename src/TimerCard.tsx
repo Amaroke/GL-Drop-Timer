@@ -93,7 +93,7 @@ export function TimerCard({
       <button
         type="button"
         onClick={openEditor}
-        aria-label={`Set ${name} availability manually`}
+        aria-label={`Set ${name} Ready date manually`}
         className="absolute top-3 left-3 flex h-6 w-6 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
       >
         <svg
@@ -129,7 +129,7 @@ export function TimerCard({
       </div>
       <div>
         <h2 className="text-lg font-semibold text-white">{name}</h2>
-        <p className="text-sm text-white/40">Recharges in {cooldownHours}h</p>
+        <p className="text-sm text-white/40">Cooldown: {cooldownHours}h</p>
       </div>
 
       {isEditing ? (
