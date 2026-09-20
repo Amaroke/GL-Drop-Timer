@@ -153,6 +153,75 @@ describe("App", () => {
     });
   });
 
+  describe("tab title", () => {
+    const DEFAULT_TITLE = "GL Drop Timer";
+
+    beforeEach(() => {
+      document.title = DEFAULT_TITLE;
+      vi.useFakeTimers();
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it("shows the number of Ready Drops", () => {
+      const store = createMemoryDropStore({
+        "gl-timer-star-battery": NOW - 1000,
+        "gl-timer-tool-case": NOW - 1,
+        "gl-timer-helmet": NOW + 3600 * 1000,
+      });
+
+      render(<App store={store} now={() => NOW} />);
+
+      expect(document.title).toBe(`(2) ${DEFAULT_TITLE}`);
+    });
+
+    it("updates when a Drop becomes Ready", () => {
+      let time = NOW;
+      render(<App store={createMemoryDropStore()} now={() => time} />);
+      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      expect(document.title).toBe(DEFAULT_TITLE);
+
+      time = NOW + 12 * 3600 * 1000;
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(document.title).toBe(`(1) ${DEFAULT_TITLE}`);
+    });
+
+    it("keeps the default title when no Drop is Ready", () => {
+      const store = createMemoryDropStore({ "gl-timer-star-battery": NOW + 3600 * 1000 });
+
+      render(<App store={store} now={() => NOW} />);
+
+      expect(document.title).toBe(DEFAULT_TITLE);
+    });
+
+    it("returns to the default title once the Ready Drop is reset", () => {
+      const store = createMemoryDropStore({ "gl-timer-star-battery": NOW - 1000 });
+      render(<App store={store} now={() => NOW} />);
+      expect(document.title).toBe(`(1) ${DEFAULT_TITLE}`);
+
+      act(() =>
+        card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }).click(),
+      );
+      act(() => card("Star Battery").getByRole("button", { name: "Confirm reset" }).click());
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(document.title).toBe(DEFAULT_TITLE);
+    });
+
+    it("restores the default title when the app unmounts", () => {
+      const store = createMemoryDropStore({ "gl-timer-star-battery": NOW - 1000 });
+      const { unmount } = render(<App store={store} now={() => NOW} />);
+
+      unmount();
+
+      expect(document.title).toBe(DEFAULT_TITLE);
+    });
+  });
+
   describe("clock jumps", () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
