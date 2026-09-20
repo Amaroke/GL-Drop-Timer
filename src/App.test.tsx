@@ -348,6 +348,228 @@ describe("App", () => {
     });
   });
 
+  describe("browser notifications", () => {
+    type Sent = { title: string; options?: NotificationOptions };
+
+    function installFakeNotification(
+      initial: NotificationPermission,
+      answer: NotificationPermission = "granted",
+    ) {
+      const sent: Sent[] = [];
+      const requestPermission = vi.fn(async () => {
+        FakeNotification.permission = answer;
+        return answer;
+      });
+      class FakeNotification {
+        static permission: NotificationPermission = initial;
+        static requestPermission = requestPermission;
+        constructor(title: string, options?: NotificationOptions) {
+          sent.push({ title, options });
+        }
+      }
+      vi.stubGlobal("Notification", FakeNotification);
+      return { sent, requestPermission };
+    }
+
+    function tick(ms = 1000) {
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+    }
+
+    async function enableNotifications() {
+      await act(async () => {
+        screen.getByRole("button", { name: "Enable notifications" }).click();
+      });
+    }
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    });
+
+    it("never requests permission on first load", () => {
+      const { requestPermission } = installFakeNotification("default");
+
+      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      tick(5000);
+
+      expect(requestPermission).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Enable notifications" })).toBeEnabled();
+    });
+
+    it("requests permission only from the enable action", async () => {
+      const { requestPermission } = installFakeNotification("default");
+      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+
+      await enableNotifications();
+
+      expect(requestPermission).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
+      expect(screen.getByText("Notifications enabled")).toBeInTheDocument();
+    });
+
+    it("sends one notification per Drop when it goes from running to Ready", () => {
+      const { sent } = installFakeNotification("granted");
+      let time = NOW;
+      const store = createMemoryDropStore({
+        "gl-timer-star-battery": NOW + 60 * 1000,
+        "gl-timer-tool-case": NOW + 3600 * 1000,
+      });
+      render(<App store={store} now={() => time} />);
+
+      tick(3000);
+      expect(sent).toHaveLength(0);
+
+      time = NOW + 2 * 60 * 1000;
+      tick();
+      tick();
+      tick();
+
+      expect(sent).toHaveLength(1);
+      expect(sent[0].title).toBe("Star Battery is ready");
+    });
+
+    it("sends a new notification when the same Drop becomes Ready again", () => {
+      const { sent } = installFakeNotification("granted");
+      let time = NOW;
+      render(<App store={createMemoryDropStore()} now={() => time} />);
+      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      tick();
+
+      time = NOW + 12 * 3600 * 1000;
+      tick();
+      expect(sent).toHaveLength(1);
+
+      act(() => card("Star Battery").getByRole("button", { name: "Collected" }).click());
+      tick();
+      time += 12 * 3600 * 1000;
+      tick();
+
+      expect(sent).toHaveLength(2);
+    });
+
+    it("sends nothing for a Drop already Ready at load", () => {
+      const { sent } = installFakeNotification("granted");
+      const store = createMemoryDropStore({ "gl-timer-star-battery": NOW - 1000 });
+
+      render(<App store={store} now={() => NOW} />);
+      tick(5000);
+
+      expect(sent).toHaveLength(0);
+    });
+
+    it("sends nothing for a Ready date set by hand in the past", async () => {
+      const { sent } = installFakeNotification("granted");
+      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      tick();
+
+      act(() =>
+        card("Star Battery")
+          .getByRole("button", { name: "Set Star Battery availability manually" })
+          .click(),
+      );
+      const input = card("Star Battery").getByDisplayValue(/.*/) as HTMLInputElement;
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(
+          input,
+          "2025-12-31T10:00",
+        );
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      act(() => card("Star Battery").getByRole("button", { name: "Save" }).click());
+      tick(3000);
+
+      expect(card("Star Battery").getByText("Ready!")).toBeInTheDocument();
+      expect(sent).toHaveLength(0);
+    });
+
+    it("sends nothing when a running timer is reset", () => {
+      const { sent } = installFakeNotification("granted");
+      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      tick();
+
+      act(() =>
+        card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }).click(),
+      );
+      act(() => card("Star Battery").getByRole("button", { name: "Reset" }).click());
+      tick(3000);
+
+      expect(sent).toHaveLength(0);
+    });
+
+    it("keeps checking the other Drops when a notification cannot be created", () => {
+      const { sent } = installFakeNotification("granted");
+      const Working = Notification;
+      let calls = 0;
+      vi.stubGlobal(
+        "Notification",
+        Object.assign(
+          function (title: string, options?: NotificationOptions) {
+            calls += 1;
+            if (calls === 1) throw new Error("Illegal constructor");
+            return new Working(title, options);
+          },
+          { permission: "granted", requestPermission: vi.fn() },
+        ),
+      );
+      let time = NOW;
+      const store = createMemoryDropStore({
+        "gl-timer-star-battery": NOW + 60 * 1000,
+        "gl-timer-tool-case": NOW + 60 * 1000,
+      });
+      render(<App store={store} now={() => time} />);
+      tick();
+
+      time = NOW + 2 * 60 * 1000;
+      tick();
+
+      expect(sent).toHaveLength(1);
+    });
+
+    it("keeps working and sends nothing when permission is denied", () => {
+      const { sent } = installFakeNotification("denied");
+      let time = NOW;
+      render(<App store={createMemoryDropStore()} now={() => time} />);
+
+      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      tick();
+      time = NOW + 12 * 3600 * 1000;
+      tick();
+
+      expect(card("Star Battery").getByText("Ready!")).toBeInTheDocument();
+      expect(sent).toHaveLength(0);
+      expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
+      expect(screen.getByText("Notifications blocked")).toBeInTheDocument();
+    });
+
+    it("sends nothing when the player refuses the permission prompt", async () => {
+      const { sent } = installFakeNotification("default", "denied");
+      let time = NOW;
+      render(<App store={createMemoryDropStore()} now={() => time} />);
+      await enableNotifications();
+
+      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      time = NOW + 12 * 3600 * 1000;
+      tick();
+
+      expect(sent).toHaveLength(0);
+      expect(screen.getByText("Notifications blocked")).toBeInTheDocument();
+    });
+
+    it("works without any notification support", () => {
+      vi.stubGlobal("Notification", undefined);
+
+      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+
+      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
+      expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
+    });
+  });
+
   describe("clock jumps", () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
