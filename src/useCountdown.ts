@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export function useCountdown(readyAt: number | null) {
+export function useCountdown(readyAt: number | null, now: () => number) {
   const [, forceTick] = useState(0);
 
   useEffect(() => {
@@ -10,7 +10,7 @@ export function useCountdown(readyAt: number | null) {
   }, [readyAt]);
 
   if (readyAt === null) return null;
-  return Math.max(0, readyAt - Date.now());
+  return Math.max(0, readyAt - now());
 }
 
 export function formatDuration(ms: number) {

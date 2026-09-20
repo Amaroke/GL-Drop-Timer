@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { DropStore } from "./dropStore";
 import {
   formatDuration,
   formatReadyDate,
@@ -12,6 +13,8 @@ type TimerCardProps = {
   image: string;
   cooldownHours: number;
   accent: string;
+  store: DropStore;
+  now: () => number;
 };
 
 export function TimerCard({
@@ -20,41 +23,50 @@ export function TimerCard({
   image,
   cooldownHours,
   accent,
+  store,
+  now,
 }: TimerCardProps) {
-  const [readyAt, setReadyAt] = useState<number | null>(() => {
-    const stored = localStorage.getItem(storageKey);
-    return stored ? Number(stored) : null;
-  });
+  const [readyAt, setReadyAt] = useState<number | null>(() => store.get(storageKey));
   const [isEditing, setIsEditing] = useState(false);
   const [draftDate, setDraftDate] = useState("");
+  const [editorError, setEditorError] = useState<string | null>(null);
 
-  const remaining = useCountdown(readyAt);
+  const remaining = useCountdown(readyAt, now);
   const isReady = readyAt !== null && remaining === 0;
 
   useEffect(() => {
-    if (readyAt === null) localStorage.removeItem(storageKey);
-    else localStorage.setItem(storageKey, String(readyAt));
-  }, [readyAt, storageKey]);
+    store.set(storageKey, readyAt);
+  }, [readyAt, storageKey, store]);
 
   const isRunning = readyAt !== null && !isReady;
-  const collect = () => setReadyAt(Date.now() + cooldownHours * 3600 * 1000);
+  const collect = () => setReadyAt(now() + cooldownHours * 3600 * 1000);
   const reset = () => setReadyAt(null);
 
   const openEditor = () => {
-    setDraftDate(
-      toDatetimeLocalValue(readyAt ?? Date.now() + cooldownHours * 3600 * 1000),
-    );
+    setDraftDate(toDatetimeLocalValue(readyAt ?? now() + cooldownHours * 3600 * 1000));
+    setEditorError(null);
     setIsEditing(true);
+  };
+
+  const closeEditor = () => {
+    setEditorError(null);
+    setIsEditing(false);
   };
 
   const confirmEditor = () => {
     const timestamp = new Date(draftDate).getTime();
-    if (!Number.isNaN(timestamp)) setReadyAt(timestamp);
-    setIsEditing(false);
+    if (!Number.isFinite(timestamp)) {
+      setEditorError("Invalid date. Enter a valid date and time.");
+      return;
+    }
+    setReadyAt(timestamp);
+    closeEditor();
   };
 
   return (
     <div
+      role="group"
+      aria-label={name}
       className="relative flex flex-col items-center gap-4 rounded-2xl border p-6 text-center backdrop-blur-sm transition-shadow"
       style={{
         borderColor: isReady ? accent : "rgba(255,255,255,0.08)",
@@ -97,11 +109,7 @@ export function TimerCard({
         className="flex h-20 w-20 items-center justify-center rounded-full p-3"
         style={{ background: `${accent}22`, border: `1px solid ${accent}66` }}
       >
-        <img
-          src={image}
-          alt={name}
-          className="h-full w-full object-contain drop-shadow-md"
-        />
+        <img src={image} alt={name} className="h-full w-full object-contain drop-shadow-md" />
       </div>
       <div>
         <h2 className="text-lg font-semibold text-white">{name}</h2>
@@ -114,12 +122,18 @@ export function TimerCard({
             type="datetime-local"
             value={draftDate}
             onChange={(e) => setDraftDate(e.target.value)}
+            aria-invalid={editorError !== null}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white scheme-dark"
           />
+          {editorError && (
+            <p role="alert" className="text-sm text-red-400">
+              {editorError}
+            </p>
+          )}
           <div className="flex w-full gap-2">
             <button
               type="button"
-              onClick={() => setIsEditing(false)}
+              onClick={closeEditor}
               className="flex-1 rounded-xl bg-white/8 px-4 py-2 font-medium text-white transition-colors"
             >
               Cancel
@@ -141,16 +155,10 @@ export function TimerCard({
               className="font-mono text-3xl tabular-nums"
               style={{ color: isReady ? accent : "#e9e6f5" }}
             >
-              {isReady
-                ? "Ready!"
-                : remaining === null
-                  ? "--:--:--"
-                  : formatDuration(remaining)}
+              {isReady ? "Ready!" : remaining === null ? "--:--:--" : formatDuration(remaining)}
             </div>
             {isRunning && readyAt !== null && (
-              <p className="mt-1 text-sm text-white/50">
-                {formatReadyDate(readyAt)}
-              </p>
+              <p className="mt-1 text-sm text-white/50">{formatReadyDate(readyAt)}</p>
             )}
           </div>
 
