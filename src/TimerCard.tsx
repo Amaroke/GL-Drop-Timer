@@ -173,31 +173,34 @@ export function TimerCard({
             >
               {isReady ? "Ready!" : remaining === null ? "--:--:--" : formatDuration(remaining)}
             </div>
-            {isRunning && readyAt !== null && (
-              <p className="mt-1 text-sm text-white/50">{formatReadyDate(readyAt)}</p>
+            {isConfirmingReset ? (
+              <p role="alert" className="mt-1 h-5 text-sm text-white/70">
+                Reset this timer?
+              </p>
+            ) : (
+              <p className="mt-1 h-5 text-sm text-white/50">
+                {isRunning && readyAt !== null ? formatReadyDate(readyAt) : null}
+              </p>
             )}
           </div>
 
           {isConfirmingReset ? (
-            <div role="alert" className="flex w-full flex-col items-center gap-2">
-              <p className="text-sm text-white/70">Reset this timer?</p>
-              <div className="flex w-full gap-2">
-                <button
-                  type="button"
-                  autoFocus
-                  onClick={cancelReset}
-                  className="flex-1 rounded-xl bg-white/8 px-4 py-2 font-medium text-white transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmReset}
-                  className="flex-1 rounded-xl bg-red-500 px-4 py-2 font-medium text-white transition-colors"
-                >
-                  Reset
-                </button>
-              </div>
+            <div className="flex w-full gap-2">
+              <button
+                type="button"
+                autoFocus
+                onClick={cancelReset}
+                className="flex-1 rounded-xl bg-white/8 px-4 py-2 font-medium text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmReset}
+                className="flex-1 rounded-xl bg-red-500 px-4 py-2 font-medium text-white transition-colors"
+              >
+                Reset
+              </button>
             </div>
           ) : (
             <button
