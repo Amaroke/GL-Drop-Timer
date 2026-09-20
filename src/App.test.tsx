@@ -222,6 +222,132 @@ describe("App", () => {
     });
   });
 
+  describe("cross-tab synchronization", () => {
+    beforeEach(() => localStorage.clear());
+    afterEach(() => localStorage.clear());
+
+    function otherTabWrites(key: string, value: string | null) {
+      const oldValue = localStorage.getItem(key);
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+      act(() => {
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key,
+            oldValue,
+            newValue: value,
+            storageArea: localStorage,
+          }),
+        );
+      });
+    }
+
+    it("shows a Ready date set in another tab without reload", () => {
+      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
+
+      otherTabWrites("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
+
+      expect(card("Star Battery").getByText("03:00:00")).toBeInTheDocument();
+      expect(card("Tool Case").getByText("--:--:--")).toBeInTheDocument();
+    });
+
+    it("shows a Ready date changed in another tab", () => {
+      localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
+      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+
+      otherTabWrites("gl-timer-star-battery", String(NOW + 5 * 3600 * 1000));
+
+      expect(card("Star Battery").getByText("05:00:00")).toBeInTheDocument();
+    });
+
+    it("shows a Drop as not started when it is reset in another tab", () => {
+      localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
+      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+
+      otherTabWrites("gl-timer-star-battery", null);
+
+      expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
+      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
+    });
+
+    it("shows every Drop as not started when the storage is cleared in another tab", () => {
+      localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
+      localStorage.setItem("gl-timer-tool-case", String(NOW + 4 * 3600 * 1000));
+      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+
+      localStorage.clear();
+      act(() => {
+        window.dispatchEvent(new StorageEvent("storage", { key: null, storageArea: localStorage }));
+      });
+
+      expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
+      expect(card("Tool Case").getByText("--:--:--")).toBeInTheDocument();
+    });
+
+    it("ignores changes to unrelated keys and to session storage", () => {
+      localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
+      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+
+      otherTabWrites("unrelated", "1");
+      sessionStorage.setItem("gl-timer-star-battery", String(NOW + 9 * 3600 * 1000));
+      act(() => {
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key: "gl-timer-star-battery",
+            newValue: String(NOW + 9 * 3600 * 1000),
+            storageArea: sessionStorage,
+          }),
+        );
+      });
+      sessionStorage.clear();
+
+      expect(card("Star Battery").getByText("03:00:00")).toBeInTheDocument();
+    });
+
+    it("dismisses a pending reset confirmation when another tab already reset the Drop", async () => {
+      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
+      );
+      expect(card("Star Battery").getByText(/reset this timer\?/i)).toBeInTheDocument();
+
+      otherTabWrites("gl-timer-star-battery", null);
+
+      expect(card("Star Battery").queryByText(/reset this timer\?/i)).toBeNull();
+      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
+    });
+  });
+
+  describe("pending reset confirmation and a newer Ready date from another tab", () => {
+    beforeEach(() => localStorage.clear());
+    afterEach(() => localStorage.clear());
+
+    it("dismisses the confirmation so the newer Ready date is not wiped", async () => {
+      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
+      );
+
+      const newer = String(NOW + 2 * 3600 * 1000);
+      localStorage.setItem("gl-timer-star-battery", newer);
+      act(() => {
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key: "gl-timer-star-battery",
+            newValue: newer,
+            storageArea: localStorage,
+          }),
+        );
+      });
+
+      expect(card("Star Battery").queryByRole("button", { name: "Confirm reset" })).toBeNull();
+      expect(card("Star Battery").getByText("02:00:00")).toBeInTheDocument();
+    });
+  });
+
   describe("clock jumps", () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
