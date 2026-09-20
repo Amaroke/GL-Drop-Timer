@@ -195,7 +195,7 @@ export function TimerCard({
                   onClick={confirmReset}
                   className="flex-1 rounded-xl bg-red-500 px-4 py-2 font-medium text-white transition-colors"
                 >
-                  Confirm reset
+                  Reset
                 </button>
               </div>
             </div>
