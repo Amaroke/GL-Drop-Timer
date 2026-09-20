@@ -62,7 +62,7 @@ describe("App", () => {
   describe("manual Ready date editor", () => {
     async function openEditor(name: string) {
       await userEvent.click(
-        card(name).getByRole("button", { name: `Set ${name} availability manually` }),
+        card(name).getByRole("button", { name: `Set ${name} Ready date manually` }),
       );
       return card(name).getByDisplayValue(/.*/) as HTMLInputElement;
     }
@@ -467,7 +467,7 @@ describe("App", () => {
 
       act(() =>
         card("Star Battery")
-          .getByRole("button", { name: "Set Star Battery availability manually" })
+          .getByRole("button", { name: "Set Star Battery Ready date manually" })
           .click(),
       );
       const input = card("Star Battery").getByDisplayValue(/.*/) as HTMLInputElement;
