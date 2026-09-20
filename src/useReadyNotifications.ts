@@ -18,38 +18,48 @@ export function useReadyNotifications(
   now: () => number,
 ) {
   const [permission, setPermission] = useState(readPermission);
-  const wasRunning = useRef<Map<string, boolean>>(new Map());
+  const lastState = useRef<Map<string, "idle" | "running" | "ready">>(new Map());
 
-  const isRunning = useCallback(
+  const readState = useCallback(
     (storageKey: string) => {
       const readyAt = store.get(storageKey);
-      return readyAt !== null && readyAt > now();
+      if (readyAt === null) return "idle";
+      return readyAt > now() ? "running" : "ready";
     },
     [store, now],
   );
 
   useEffect(() => {
-    for (const drop of drops) wasRunning.current.set(drop.storageKey, isRunning(drop.storageKey));
+    for (const drop of drops) lastState.current.set(drop.storageKey, readState(drop.storageKey));
 
     const id = setInterval(() => {
       for (const drop of drops) {
-        const running = isRunning(drop.storageKey);
-        const justBecameReady = wasRunning.current.get(drop.storageKey) === true && !running;
-        wasRunning.current.set(drop.storageKey, running);
+        const state = readState(drop.storageKey);
+        const justBecameReady =
+          lastState.current.get(drop.storageKey) === "running" && state === "ready";
+        lastState.current.set(drop.storageKey, state);
         if (justBecameReady && readPermission() === "granted") {
-          new Notification(`${drop.name} is ready`, {
-            body: `Your ${drop.name} can be collected.`,
-            tag: drop.storageKey,
-          });
+          try {
+            new Notification(`${drop.name} is ready`, {
+              body: `Your ${drop.name} can be collected.`,
+              tag: drop.storageKey,
+            });
+          } catch {
+            continue;
+          }
         }
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [drops, isRunning]);
+  }, [drops, readState]);
 
   const requestPermission = useCallback(async () => {
     if (typeof Notification === "undefined") return;
-    await Notification.requestPermission();
+    try {
+      await Notification.requestPermission();
+    } catch {
+      return;
+    }
     setPermission(readPermission());
   }, []);
 

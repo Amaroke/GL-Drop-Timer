@@ -485,6 +485,50 @@ describe("App", () => {
       expect(sent).toHaveLength(0);
     });
 
+    it("sends nothing when a running timer is reset", () => {
+      const { sent } = installFakeNotification("granted");
+      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      tick();
+
+      act(() =>
+        card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }).click(),
+      );
+      act(() => card("Star Battery").getByRole("button", { name: "Reset" }).click());
+      tick(3000);
+
+      expect(sent).toHaveLength(0);
+    });
+
+    it("keeps checking the other Drops when a notification cannot be created", () => {
+      const { sent } = installFakeNotification("granted");
+      const Working = Notification;
+      let calls = 0;
+      vi.stubGlobal(
+        "Notification",
+        Object.assign(
+          function (title: string, options?: NotificationOptions) {
+            calls += 1;
+            if (calls === 1) throw new Error("Illegal constructor");
+            return new Working(title, options);
+          },
+          { permission: "granted", requestPermission: vi.fn() },
+        ),
+      );
+      let time = NOW;
+      const store = createMemoryDropStore({
+        "gl-timer-star-battery": NOW + 60 * 1000,
+        "gl-timer-tool-case": NOW + 60 * 1000,
+      });
+      render(<App store={store} now={() => time} />);
+      tick();
+
+      time = NOW + 2 * 60 * 1000;
+      tick();
+
+      expect(sent).toHaveLength(1);
+    });
+
     it("keeps working and sends nothing when permission is denied", () => {
       const { sent } = installFakeNotification("denied");
       let time = NOW;
