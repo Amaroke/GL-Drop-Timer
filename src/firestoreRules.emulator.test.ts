@@ -6,7 +6,7 @@ import {
   type RulesTestContext,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 function firestoreOf(context: RulesTestContext): Firestore {
@@ -70,5 +70,31 @@ describe("Firestore security rules", () => {
     await assertFails(setDoc(ref, { readyAt: "soon", updatedAt: 500 }));
     await assertFails(setDoc(ref, { readyAt: 1000, updatedAt: "500" }));
     await assertFails(setDoc(ref, { readyAt: 1000, updatedAt: 500, extra: true }));
+  });
+
+  it("rejects a write with a non-finite timestamp", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+    const ref = doc(db, OWNER_PATH);
+
+    await assertFails(setDoc(ref, { readyAt: Number.NaN, updatedAt: 500 }));
+    await assertFails(setDoc(ref, { readyAt: 1000, updatedAt: Number.POSITIVE_INFINITY }));
+    await assertFails(setDoc(ref, { readyAt: -1, updatedAt: 500 }));
+  });
+
+  it("lets an owner delete their own drop document", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+    const ref = doc(db, OWNER_PATH);
+    await assertSucceeds(setDoc(ref, VALID_ENTRY));
+
+    await assertSucceeds(deleteDoc(ref));
+  });
+
+  it("denies another player from deleting that document", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(firestoreOf(context), OWNER_PATH), VALID_ENTRY);
+    });
+
+    const db = firestoreOf(testEnv.authenticatedContext("player-2"));
+    await assertFails(deleteDoc(doc(db, OWNER_PATH)));
   });
 });

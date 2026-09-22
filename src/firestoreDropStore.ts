@@ -8,16 +8,7 @@ import {
   setDoc,
   type Firestore,
 } from "firebase/firestore";
-import type { DropEntry, DropStore } from "./dropStore";
-
-function isDropEntry(value: unknown): value is DropEntry {
-  if (typeof value !== "object" || value === null) return false;
-  const { readyAt, updatedAt } = value as Record<string, unknown>;
-  const hasValidReadyAt =
-    readyAt === null || (typeof readyAt === "number" && Number.isFinite(readyAt));
-  const hasValidUpdatedAt = typeof updatedAt === "number" && Number.isFinite(updatedAt);
-  return hasValidReadyAt && hasValidUpdatedAt;
-}
+import { isDropEntry, type DropEntry, type DropStore } from "./dropStore";
 
 export function createAppFirestore(app: FirebaseApp): Firestore {
   return initializeFirestore(app, {
@@ -28,16 +19,22 @@ export function createAppFirestore(app: FirebaseApp): Firestore {
 export function createFirestoreDropStore(db: Firestore, uid: string): DropStore {
   const cache = new Map<string, DropEntry | null>();
   const listeners = new Map<string, Set<() => void>>();
-  const subscribed = new Set<string>();
+  const unwatchers = new Map<string, () => void>();
 
   function ensureWatched(key: string) {
-    if (subscribed.has(key)) return;
-    subscribed.add(key);
-    onSnapshot(doc(db, "users", uid, "drops", key), (snapshot) => {
-      const data = snapshot.data();
-      cache.set(key, isDropEntry(data) ? data : null);
-      listeners.get(key)?.forEach((onChange) => onChange());
-    });
+    if (unwatchers.has(key)) return;
+    const unwatch = onSnapshot(
+      doc(db, "users", uid, "drops", key),
+      (snapshot) => {
+        const data = snapshot.data();
+        cache.set(key, isDropEntry(data) ? data : null);
+        listeners.get(key)?.forEach((onChange) => onChange());
+      },
+      () => {
+        // Best effort: a dead listener leaves the last known cache value in place.
+      },
+    );
+    unwatchers.set(key, unwatch);
   }
 
   return {
@@ -46,14 +43,24 @@ export function createFirestoreDropStore(db: Firestore, uid: string): DropStore 
       return cache.get(key) ?? null;
     },
     set(key, readyAt, updatedAt) {
-      void setDoc(doc(db, "users", uid, "drops", key), { readyAt, updatedAt });
+      cache.set(key, { readyAt, updatedAt });
+      listeners.get(key)?.forEach((onChange) => onChange());
+      void setDoc(doc(db, "users", uid, "drops", key), { readyAt, updatedAt }).catch(() => {
+        // Best effort: the next snapshot reconciles with the real server state.
+      });
     },
     subscribe(key, onChange) {
       ensureWatched(key);
       const keyListeners = listeners.get(key) ?? new Set<() => void>();
       keyListeners.add(onChange);
       listeners.set(key, keyListeners);
-      return () => keyListeners.delete(onChange);
+      return () => {
+        keyListeners.delete(onChange);
+        if (keyListeners.size > 0) return;
+        listeners.delete(key);
+        unwatchers.get(key)?.();
+        unwatchers.delete(key);
+      };
     },
   };
 }

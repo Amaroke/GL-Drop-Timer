@@ -16,7 +16,7 @@ function parseLegacyEntry(stored: string): DropEntry | null {
   return Number.isFinite(readyAt) ? { readyAt, updatedAt: OLDEST_UPDATED_AT } : null;
 }
 
-function isDropEntry(value: unknown): value is DropEntry {
+export function isDropEntry(value: unknown): value is DropEntry {
   if (typeof value !== "object" || value === null) return false;
   const { readyAt, updatedAt } = value as Record<string, unknown>;
   const hasValidReadyAt =

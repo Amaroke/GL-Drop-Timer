@@ -6,16 +6,21 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    function isValidTimestamp(value) {
+      return value is number && value >= 0 && value < 4102444800000;
+    }
+
     function isValidDrop() {
       let data = request.resource.data;
       return data.keys().hasOnly(['readyAt', 'updatedAt'])
-        && data.updatedAt is number
-        && (data.readyAt == null || data.readyAt is number);
+        && isValidTimestamp(data.updatedAt)
+        && (data.readyAt == null || isValidTimestamp(data.readyAt));
     }
 
     match /users/{userId}/drops/{dropId} {
       allow read: if isOwner(userId);
-      allow write: if isOwner(userId) && isValidDrop();
+      allow create, update: if isOwner(userId) && isValidDrop();
+      allow delete: if isOwner(userId);
     }
   }
 }

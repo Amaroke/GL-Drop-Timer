@@ -37,16 +37,26 @@ describe("createFirestoreDropStore", () => {
     expect(store.get("gl-timer-star-battery")).toBeNull();
   });
 
-  it("reflects a Ready date it wrote once the snapshot arrives", async () => {
+  it("reflects a Ready date synchronously right after writing it", () => {
     const db = firestoreOf(testEnv.authenticatedContext("player-1"));
     const store = createFirestoreDropStore(db, "player-1");
 
+    store.set("gl-timer-star-battery", 1000, 500);
+
+    expect(store.get("gl-timer-star-battery")).toEqual({ readyAt: 1000, updatedAt: 500 });
+  });
+
+  it("keeps reflecting the written value once the server confirms it", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+    const store = createFirestoreDropStore(db, "player-1");
+    store.set("gl-timer-star-battery", 1000, 500);
+
     await new Promise<void>((resolve) => {
       const unsubscribe = store.subscribe("gl-timer-star-battery", () => {
+        if (store.get("gl-timer-star-battery")?.readyAt !== 1000) return;
         unsubscribe();
         resolve();
       });
-      store.set("gl-timer-star-battery", 1000, 500);
     });
 
     expect(store.get("gl-timer-star-battery")).toEqual({ readyAt: 1000, updatedAt: 500 });
