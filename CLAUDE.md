@@ -1,6 +1,6 @@
 ## Git
 
-After each commit created by /implement, push the current branch to origin without asking for confirmation. Never push to main.
+After each commit created by /implement, push the current branch to origin without asking for confirmation. Never push to main: GitHub branch protection enforces this (PR + passing CI required), except for the repo admin.
 
 ## End of an /implement
 
@@ -13,7 +13,7 @@ Once the commit is pushed and the review is done, in this order:
    - if there is an open, unblocked issue related to the one just handled (same parent, or unblocked by it), propose it to the user and, if they accept, create its branch from the up-to-date main
    - otherwise, go back to the up-to-date main
 
-Never delete an unmerged branch or push to main.
+Never delete an unmerged branch.
 
 ## Agent skills
 
