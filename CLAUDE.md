@@ -1,6 +1,6 @@
 ## Git
 
-Before creating a commit, even during /implement, show what changed and wait for confirmation. For UI work, run the app first and say what was verified. Push only after a separate confirmation. Never push to main: GitHub branch protection enforces this (PR + passing CI required), except for the repo admin.
+Before creating a commit, even during /implement, show what changed and wait for confirmation. Run the app first and say what was verified. Push only after a separate confirmation. Never push to main: GitHub branch protection enforces this (PR + passing CI required), except for the repo admin.
 
 ## End of an /implement
 
