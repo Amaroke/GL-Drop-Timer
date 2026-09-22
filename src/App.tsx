@@ -1,3 +1,5 @@
+import { AccountControl } from "./AccountControl";
+import type { AuthService } from "./auth";
 import type { DropStore } from "./dropStore";
 import { DROPS } from "./drops";
 import { TimerCard } from "./TimerCard";
@@ -6,12 +8,13 @@ import { useReadyNotifications } from "./useReadyNotifications";
 
 type AppProps = {
   store: DropStore;
+  auth: AuthService;
   now: () => number;
 };
 
 const STORAGE_KEYS = DROPS.map((drop) => drop.storageKey);
 
-function App({ store, now }: AppProps) {
+function App({ store, auth, now }: AppProps) {
   useReadyDropTitle(store, STORAGE_KEYS, now);
   const { permission, requestPermission } = useReadyNotifications(DROPS, store, now);
 
@@ -35,6 +38,7 @@ function App({ store, now }: AppProps) {
         {permission === "denied" && (
           <p className="mt-4 text-sm text-white/40">Notifications blocked</p>
         )}
+        <AccountControl auth={auth} />
       </header>
 
       <main className="grid w-full grid-cols-1 gap-6 sm:grid-cols-3">

@@ -20,6 +20,14 @@ _Avoid_: Availability date, expiry
 The act of picking up a Drop in the game, which starts its Cooldown.
 _Avoid_: Claim, redeem
 
+**Player**:
+The person using the app to track their Drops, whether signed in or not.
+_Avoid_: User
+
+**Sign in**:
+Authenticating with Google to identify the Player as themself.
+_Avoid_: Log in, authenticate
+
 **Colony**:
 A planet owned by the player, each with its own Star Base. The main planet is a Colony like any other.
 _Avoid_: Planet, base, world

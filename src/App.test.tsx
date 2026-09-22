@@ -3,9 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { createMemoryAuthService } from "./auth";
 import { createLocalStorageDropStore, createMemoryDropStore, OLDEST_UPDATED_AT } from "./dropStore";
 
 const NOW = new Date("2026-01-01T12:00:00").getTime();
+const SIGNED_OUT_AUTH = createMemoryAuthService();
 
 function card(name: string) {
   return within(screen.getByRole("group", { name }));
@@ -13,7 +15,7 @@ function card(name: string) {
 
 describe("App", () => {
   it("shows a Drop with no saved Ready date as not started", () => {
-    render(<App store={createMemoryDropStore()} now={() => NOW} />);
+    render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
     const starBattery = card("Star Battery");
     expect(starBattery.getByText("--:--:--")).toBeInTheDocument();
@@ -21,7 +23,7 @@ describe("App", () => {
   });
 
   it("starts the Cooldown immediately when the player presses Collect", async () => {
-    render(<App store={createMemoryDropStore()} now={() => NOW} />);
+    render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
     await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
 
@@ -31,12 +33,12 @@ describe("App", () => {
 
   it("keeps a running Cooldown after a reload", async () => {
     const store = createMemoryDropStore();
-    const { unmount } = render(<App store={store} now={() => NOW} />);
+    const { unmount } = render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
     await userEvent.click(card("Tool Case").getByRole("button", { name: "Start timer" }));
     unmount();
 
     const twoHoursLater = NOW + 2 * 3600 * 1000;
-    render(<App store={store} now={() => twoHoursLater} />);
+    render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => twoHoursLater} />);
 
     expect(card("Tool Case").getByText("21:00:00")).toBeInTheDocument();
   });
@@ -50,7 +52,9 @@ describe("App", () => {
       (value) => {
         localStorage.setItem("gl-timer-star-battery", value);
 
-        render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+        render(
+          <App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />,
+        );
 
         const starBattery = card("Star Battery");
         expect(starBattery.getByText("--:--:--")).toBeInTheDocument();
@@ -68,7 +72,7 @@ describe("App", () => {
     }
 
     it("saves a valid date and shows the matching Ready date", async () => {
-      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       const input = await openEditor("Star Battery");
       await userEvent.clear(input);
@@ -81,7 +85,7 @@ describe("App", () => {
     });
 
     it("rejects an invalid date, shows an error and keeps the previous Ready date", async () => {
-      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
 
       const input = await openEditor("Star Battery");
@@ -105,7 +109,7 @@ describe("App", () => {
 
     it("asks for confirmation and keeps the Ready date until confirmed", async () => {
       const store = createMemoryDropStore();
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       await startAndPressReset("Star Battery");
 
@@ -119,7 +123,7 @@ describe("App", () => {
 
     it("clears the Ready date when the player confirms", async () => {
       const store = createMemoryDropStore();
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       await startAndPressReset("Star Battery");
 
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Reset" }));
@@ -132,7 +136,7 @@ describe("App", () => {
 
     it("keeps the Ready date when the player cancels", async () => {
       const store = createMemoryDropStore();
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       await startAndPressReset("Star Battery");
 
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Cancel" }));
@@ -143,7 +147,7 @@ describe("App", () => {
     });
 
     it("only asks for the Drop whose reset was pressed", async () => {
-      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       await userEvent.click(card("Tool Case").getByRole("button", { name: "Start timer" }));
 
       await startAndPressReset("Star Battery");
@@ -156,7 +160,7 @@ describe("App", () => {
   describe("updated-at tracking", () => {
     it("records the current time as updated-at when a Drop is Collected", async () => {
       const store = createMemoryDropStore();
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
 
@@ -165,7 +169,7 @@ describe("App", () => {
 
     it("records the current time as updated-at when a Ready date is edited manually", async () => {
       const store = createMemoryDropStore();
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       await userEvent.click(
         card("Star Battery").getByRole("button", { name: "Set Star Battery Ready date manually" }),
@@ -180,7 +184,7 @@ describe("App", () => {
 
     it("records the current time as updated-at when a Drop is reset", async () => {
       const store = createMemoryDropStore();
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
       await userEvent.click(
         card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
@@ -199,7 +203,7 @@ describe("App", () => {
         localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
         const store = createLocalStorageDropStore();
 
-        render(<App store={store} now={() => NOW} />);
+        render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
         expect(card("Star Battery").getByText("03:00:00")).toBeInTheDocument();
         expect(store.get("gl-timer-star-battery")).toEqual({
@@ -226,14 +230,14 @@ describe("App", () => {
         "gl-timer-helmet": NOW + 3600 * 1000,
       });
 
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       expect(document.title).toBe(`(2) ${DEFAULT_TITLE}`);
     });
 
     it("updates when a Drop becomes Ready", () => {
       let time = NOW;
-      render(<App store={createMemoryDropStore()} now={() => time} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
       act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
       expect(document.title).toBe(DEFAULT_TITLE);
 
@@ -248,14 +252,14 @@ describe("App", () => {
     it("keeps the default title when no Drop is Ready", () => {
       const store = createMemoryDropStore({ "gl-timer-star-battery": NOW + 3600 * 1000 });
 
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       expect(document.title).toBe(DEFAULT_TITLE);
     });
 
     it("returns to the default title once the Ready Drop is reset", () => {
       const store = createMemoryDropStore({ "gl-timer-star-battery": NOW - 1000 });
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       expect(document.title).toBe(`(1) ${DEFAULT_TITLE}`);
 
       act(() =>
@@ -271,7 +275,7 @@ describe("App", () => {
 
     it("restores the default title when the app unmounts", () => {
       const store = createMemoryDropStore({ "gl-timer-star-battery": NOW - 1000 });
-      const { unmount } = render(<App store={store} now={() => NOW} />);
+      const { unmount } = render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       unmount();
 
@@ -300,7 +304,7 @@ describe("App", () => {
     }
 
     it("shows a Ready date set in another tab without reload", () => {
-      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
 
       otherTabWrites("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
@@ -311,7 +315,7 @@ describe("App", () => {
 
     it("shows a Ready date changed in another tab", () => {
       localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
-      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       otherTabWrites("gl-timer-star-battery", String(NOW + 5 * 3600 * 1000));
 
@@ -320,7 +324,7 @@ describe("App", () => {
 
     it("shows a Drop as not started when it is reset in another tab", () => {
       localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
-      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       otherTabWrites("gl-timer-star-battery", null);
 
@@ -331,7 +335,7 @@ describe("App", () => {
     it("shows every Drop as not started when the storage is cleared in another tab", () => {
       localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
       localStorage.setItem("gl-timer-tool-case", String(NOW + 4 * 3600 * 1000));
-      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       localStorage.clear();
       act(() => {
@@ -344,7 +348,7 @@ describe("App", () => {
 
     it("ignores changes to unrelated keys and to session storage", () => {
       localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
-      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       otherTabWrites("unrelated", "1");
       sessionStorage.setItem("gl-timer-star-battery", String(NOW + 9 * 3600 * 1000));
@@ -363,7 +367,7 @@ describe("App", () => {
     });
 
     it("dismisses a pending reset confirmation when another tab already reset the Drop", async () => {
-      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
       await userEvent.click(
         card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
@@ -382,7 +386,7 @@ describe("App", () => {
     afterEach(() => localStorage.clear());
 
     it("dismisses the confirmation so the newer Ready date is not wiped", async () => {
-      render(<App store={createLocalStorageDropStore()} now={() => NOW} />);
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
       await userEvent.click(
         card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
@@ -449,7 +453,7 @@ describe("App", () => {
     it("never requests permission on first load", () => {
       const { requestPermission } = installFakeNotification("default");
 
-      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       tick(5000);
 
       expect(requestPermission).not.toHaveBeenCalled();
@@ -458,7 +462,7 @@ describe("App", () => {
 
     it("requests permission only from the enable action", async () => {
       const { requestPermission } = installFakeNotification("default");
-      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       await enableNotifications();
 
@@ -474,7 +478,7 @@ describe("App", () => {
         "gl-timer-star-battery": NOW + 60 * 1000,
         "gl-timer-tool-case": NOW + 3600 * 1000,
       });
-      render(<App store={store} now={() => time} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => time} />);
 
       tick(3000);
       expect(sent).toHaveLength(0);
@@ -491,7 +495,7 @@ describe("App", () => {
     it("sends a new notification when the same Drop becomes Ready again", () => {
       const { sent } = installFakeNotification("granted");
       let time = NOW;
-      render(<App store={createMemoryDropStore()} now={() => time} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
       act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
       tick();
 
@@ -511,7 +515,7 @@ describe("App", () => {
       const { sent } = installFakeNotification("granted");
       const store = createMemoryDropStore({ "gl-timer-star-battery": NOW - 1000 });
 
-      render(<App store={store} now={() => NOW} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       tick(5000);
 
       expect(sent).toHaveLength(0);
@@ -519,7 +523,7 @@ describe("App", () => {
 
     it("sends nothing for a Ready date set by hand in the past", async () => {
       const { sent } = installFakeNotification("granted");
-      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       tick();
 
       act(() =>
@@ -544,7 +548,7 @@ describe("App", () => {
 
     it("sends nothing when a running timer is reset", () => {
       const { sent } = installFakeNotification("granted");
-      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
       tick();
 
@@ -577,7 +581,7 @@ describe("App", () => {
         "gl-timer-star-battery": NOW + 60 * 1000,
         "gl-timer-tool-case": NOW + 60 * 1000,
       });
-      render(<App store={store} now={() => time} />);
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => time} />);
       tick();
 
       time = NOW + 2 * 60 * 1000;
@@ -589,7 +593,7 @@ describe("App", () => {
     it("keeps working and sends nothing when permission is denied", () => {
       const { sent } = installFakeNotification("denied");
       let time = NOW;
-      render(<App store={createMemoryDropStore()} now={() => time} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
 
       act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
       expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
@@ -606,7 +610,7 @@ describe("App", () => {
     it("sends nothing when the player refuses the permission prompt", async () => {
       const { sent } = installFakeNotification("default", "denied");
       let time = NOW;
-      render(<App store={createMemoryDropStore()} now={() => time} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
       await enableNotifications();
 
       act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
@@ -620,10 +624,83 @@ describe("App", () => {
     it("works without any notification support", () => {
       vi.stubGlobal("Notification", undefined);
 
-      render(<App store={createMemoryDropStore()} now={() => NOW} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
       expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
+    });
+  });
+
+  describe("account", () => {
+    it("lets a visitor use a Drop timer without signing in", async () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+
+      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeEnabled();
+    });
+
+    it("shows who is signed in once the player signs in with Google", async () => {
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: "ada@example.com" }),
+      );
+      render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      expect(screen.getByText("Signed in as Ada Lovelace")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Sign out" })).toBeEnabled();
+      expect(screen.queryByRole("button", { name: "Sign in with Google" })).toBeNull();
+    });
+
+    it("falls back to the email when the Google account has no display name", async () => {
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: null, email: "ada@example.com" }),
+      );
+      render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      expect(screen.getByText("Signed in as ada@example.com")).toBeInTheDocument();
+    });
+
+    it("returns to signed out when the player signs out", async () => {
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: "ada@example.com" }),
+      );
+      render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
+
+      expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeEnabled();
+      expect(screen.queryByText(/Signed in as/)).toBeNull();
+    });
+
+    it("quietly returns to signed out when the sign-in popup is cancelled", async () => {
+      const auth = createMemoryAuthService(() => Promise.reject(new Error("popup closed")));
+      render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeEnabled();
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
+    });
+
+    it("keeps Ready dates in the local store while signed in", async () => {
+      const store = createMemoryDropStore();
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: "ada@example.com" }),
+      );
+      render(<App store={store} auth={auth} now={() => NOW} />);
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+
+      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      expect(store.get("gl-timer-star-battery")?.readyAt).toBe(NOW + 11 * 3600 * 1000);
     });
   });
 
@@ -633,7 +710,7 @@ describe("App", () => {
 
     it("shows Ready after the clock jumps past the Ready date", () => {
       let time = NOW;
-      render(<App store={createMemoryDropStore()} now={() => time} />);
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
       act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
       expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
 
