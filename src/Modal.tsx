@@ -19,9 +19,7 @@ export function Modal({ label, onClose, children }: ModalProps) {
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const focusable = contentRef.current
-      ? focusableElements(contentRef.current)
-      : [];
+    const focusable = contentRef.current ? focusableElements(contentRef.current) : [];
     focusable[0]?.focus();
 
     return () => previouslyFocused?.focus();
