@@ -6,15 +6,15 @@ export function TimerChipSkeleton() {
   return (
     <div
       aria-hidden="true"
-      className="flex flex-shrink-0 animate-pulse items-center gap-2.5 rounded-2xl border border-white/8 py-2.5 pr-3 pl-2.5"
+      className="flex shrink-0 animate-pulse items-center gap-2.5 rounded-2xl border border-white/8 py-2.5 pr-3 pl-2.5"
       style={{ background: "rgba(255,255,255,0.03)" }}
     >
-      <div className="h-9 w-9 flex-shrink-0 rounded-full bg-white/10" />
-      <div className="flex min-w-[68px] flex-col gap-1.5">
+      <div className="h-9 w-9 shrink-0 rounded-full bg-white/10" />
+      <div className="flex min-w-17 flex-col gap-1.5">
         <span className="h-3 w-16 rounded bg-white/10" />
         <span className="h-3.5 w-12 rounded bg-white/10" />
       </div>
-      <div className="h-8 w-8 flex-shrink-0 rounded-full bg-white/10" />
+      <div className="h-8 w-8 shrink-0 rounded-full bg-white/10" />
     </div>
   );
 }
@@ -41,7 +41,7 @@ export function TimerChip({
     <div
       role="group"
       aria-label={`${name} timer`}
-      className="relative flex flex-shrink-0 items-center gap-2.5 rounded-2xl border py-2.5 pr-3 pl-2.5"
+      className="relative flex shrink-0 items-center gap-2.5 rounded-2xl border py-2.5 pr-3 pl-2.5"
       style={{
         borderColor: isReady ? accent : "rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.03)",
@@ -49,13 +49,13 @@ export function TimerChip({
       }}
     >
       <div
-        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full p-1.5"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full p-1.5"
         style={{ background: `${accent}22`, border: `1px solid ${accent}66` }}
       >
         <img src={image} alt="" className="h-full w-full object-contain" />
       </div>
 
-      <div className="flex min-w-[68px] flex-col">
+      <div className="flex min-w-17 flex-col">
         <span className="text-xs font-semibold text-white">{name}</span>
         <span
           className="font-mono text-sm tabular-nums"
@@ -70,7 +70,7 @@ export function TimerChip({
         onClick={collect}
         disabled={isRunning}
         aria-label={readyAt === null ? `Start ${name} timer` : `Collect ${name}`}
-        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed"
         style={{
           background: isReady ? accent : "rgba(255,255,255,0.08)",
           color: isReady ? "#0a0716" : "#e9e6f5",
@@ -95,7 +95,7 @@ export function TimerChip({
         type="button"
         onClick={onOpenAdvanced}
         aria-label={`Advanced settings for ${name}`}
-        className="absolute -top-2 -right-2 flex h-[22px] w-[22px] items-center justify-center rounded-full border border-white/10 bg-[#17132b] text-white/50 transition-colors hover:bg-white/10 hover:text-white/90"
+        className="absolute -top-2 -right-2 flex h-5.5 w-5.5 items-center justify-center rounded-full border border-white/10 bg-[#17132b] text-white/50 transition-colors hover:bg-white/10 hover:text-white/90"
       >
         <GearIcon className="h-3 w-3" />
       </button>

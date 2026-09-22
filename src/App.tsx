@@ -64,13 +64,13 @@ function App({ store, auth, now }: AppProps) {
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-6 py-8">
       <main className="flex flex-1 flex-col">
         <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <div className="hidden sm:block sm:flex-shrink-0">
+          <div className="hidden sm:block sm:shrink-0">
             <NotificationsControl permission={permission} requestPermission={requestPermission} />
           </div>
 
           <TimerChipsRow auth={auth} timers={timers} onOpenAdvanced={setAdvancedDropKey} />
 
-          <div className="sm:flex-shrink-0">
+          <div className="sm:shrink-0">
             <AccountControl auth={auth} store={store} />
           </div>
         </div>

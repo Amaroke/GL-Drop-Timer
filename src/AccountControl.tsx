@@ -32,7 +32,7 @@ function SyncStatusDot({ status }: { status: SyncStatus }) {
       role="status"
       title={label}
       aria-label={label}
-      className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${dotClass}`}
+      className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`}
     />
   );
 }
@@ -51,13 +51,16 @@ export function AccountControl({ auth, store }: AccountControlProps) {
           <span className="max-w-32 truncate">{label}</span>
           {syncStatus && <SyncStatusDot status={syncStatus} />}
         </span>
-        <span className="w-px flex-shrink-0 self-stretch bg-white/15" aria-hidden="true" />
+        <span
+          className="w-px shrink-0 self-stretch bg-white/15"
+          aria-hidden="true"
+        />
         <button
           type="button"
           onClick={() => auth.signOut()}
           aria-label="Sign out"
           title="Sign out"
-          className="flex flex-shrink-0 items-center self-stretch pr-3.5 pl-4 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
+          className="flex shrink-0 items-center self-stretch pr-3.5 pl-4 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
         >
           <svg
             viewBox="0 0 24 24"
