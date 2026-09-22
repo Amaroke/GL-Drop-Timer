@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Firebase, from the ground up</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="kicker">Lesson 0001 · Firebase</p>
+<h1>Firebase, from the ground up</h1>
+<p class="callout">What Firebase actually is, how GL-Drop-Timer uses it, and what every file in the repo does. GL-Drop-Timer uses exactly two Firebase products: Authentication and Firestore. No Hosting, no Storage, no Cloud Functions. See <a href="../../adr/0001-firebase-backend.md">ADR 0001</a> for why.</p>
+
+<p class="screenshot-note">Note: I can't capture real screenshots of your Firebase console, it's behind your Google login and I have no access to it. Instead this lesson uses diagrams (clearly marked as such) plus the exact menu path, so you can look at your own console side by side.</p>
+
+<div class="toc">
+<p>Contents</p>
+<ol>
+<li><a href="#what-is-firebase">What is Firebase?</a></li>
+<li><a href="#console">The console: projects and apps</a></li>
+<li><a href="#auth">Firebase Authentication, in depth</a></li>
+<li><a href="#firestore">Cloud Firestore, in depth</a></li>
+<li><a href="#rules">Security rules: how a request gets judged</a></li>
+<li><a href="#emulator">The local emulator</a></li>
+<li><a href="#files">Every Firebase file in this repo</a></li>
+<li><a href="#lifecycle">The full lifecycle, start to finish</a></li>
+<li><a href="#quiz">Recall check</a></li>
+</ol>
+</div>
+
+<h2 id="what-is-firebase">1. What is Firebase?</h2>
+<p>Firebase is Google's <strong>backend-as-a-service</strong> platform: a set of managed products (database, authentication, file storage, hosting, functions...) that you call directly from your app, instead of writing and running your own server. Google operates the infrastructure; you write client code against their SDKs. <a href="https://firebase.google.com/docs/guides">(Firebase docs — Fundamentals)</a></p>
+
+<p>GL-Drop-Timer uses two of those products:</p>
+<table>
+<tr><th>Product</th><th>What it replaces</th><th>Used for</th></tr>
+<tr><td>Firebase Authentication</td><td>A login system and session management you'd otherwise build by hand</td><td>Google sign-in, knowing who's using the app</td></tr>
+<tr><td>Cloud Firestore</td><td>A database server plus an API layer in front of it</td><td>Storing and syncing each player's drop timers</td></tr>
+</table>
+
+<div class="diagram">
+<svg viewBox="0 0 700 260" role="img" aria-labelledby="dia1-title dia1-desc">
+<title id="dia1-title">Architecture without a custom backend</title>
+<desc id="dia1-desc">The browser talks directly to Firebase Auth and Cloud Firestore, both managed by Google. No server is hosted by GL-Drop-Timer.</desc>
+<rect x="20" y="95" width="170" height="70" rx="8" fill="#f1efe7" stroke="#1a1a1a"/>
+<text x="105" y="122" text-anchor="middle" font-family="Consolas, monospace" font-size="14" fill="#1a1a1a">Browser</text>
+<text x="105" y="142" text-anchor="middle" font-family="Consolas, monospace" font-size="12" fill="#6b6558">GL-Drop-Timer</text>
+
+<rect x="330" y="20" width="200" height="70" rx="8" fill="#eaf1fb" stroke="#1c4c8c"/>
+<text x="430" y="47" text-anchor="middle" font-family="Consolas, monospace" font-size="14" fill="#1a1a1a">Firebase Auth</text>
+<text x="430" y="67" text-anchor="middle" font-family="Consolas, monospace" font-size="12" fill="#6b6558">Google sign-in</text>
+
+<rect x="330" y="170" width="200" height="70" rx="8" fill="#fdeee4" stroke="#a6401f"/>
+<text x="430" y="197" text-anchor="middle" font-family="Consolas, monospace" font-size="14" fill="#1a1a1a">Cloud Firestore</text>
+<text x="430" y="217" text-anchor="middle" font-family="Consolas, monospace" font-size="12" fill="#6b6558">drop data</text>
+
+<rect x="300" y="5" width="380" height="250" rx="10" fill="none" stroke="#d8d3c7" stroke-dasharray="4 3"/>
+<text x="670" y="245" text-anchor="end" font-family="Georgia, serif" font-style="italic" font-size="11" fill="#6b6558">run by Google, not by you</text>
+
+<line x1="190" y1="115" x2="325" y2="60" stroke="#1a1a1a" marker-end="url(#arrow1)"/>
+<line x1="190" y1="145" x2="325" y2="200" stroke="#1a1a1a" marker-end="url(#arrow1)"/>
+<text x="250" y="90" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#6b6558">sign in</text>
+<text x="250" y="185" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#6b6558">read / write</text>
+<text x="250" y="198" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#a6401f">checked by firestore.rules</text>
+
+<defs>
+<marker id="arrow1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+<path d="M0,0 L6,3 L0,6 Z" fill="#1a1a1a"/>
+</marker>
+</defs>
+</svg>
+<p class="diagram-caption">Diagram — the browser talks straight to Google's servers. There is no GL-Drop-Timer server in between.</p>
+</div>
+
+<p>Compare that to a traditional setup: browser → your API server → your database. Firebase collapses the middle tier. The trade-off is that the rules living in <code>firestore.rules</code> (covered below) now do the job your API server's authorization code would normally do.</p>
+
+<h2 id="console">2. The console: projects and apps</h2>
+<p>Everything is managed at <a href="https://console.firebase.google.com">console.firebase.google.com</a>. Two nested concepts matter:</p>
+<ul>
+<li><strong>Project</strong>: the top-level container. GL-Drop-Timer's project id is <code>demo-gl-drop-timer</code> (see <code>.firebaserc</code>, below). A project holds all the data, users, and settings.</li>
+<li><strong>App</strong>: a registration inside a project, one per platform (web, iOS, Android). GL-Drop-Timer registers one web app. Registering it is what generates the config object read in <code>src/config/firebaseConfig.ts</code>.</li>
+</ul>
+<p class="source">Source: <a href="https://firebase.google.com/docs/projects/learn-more">Understand Firebase projects</a></p>
+
+<div class="diagram">
+<svg viewBox="0 0 460 300" role="img" aria-labelledby="dia2-title dia2-desc">
+<title id="dia2-title">Simplified Firebase console sidebar</title>
+<desc id="dia2-desc">A simplified mock of the console's left navigation, not a real screenshot.</desc>
+<rect x="10" y="10" width="440" height="280" rx="8" fill="#fdfcf9" stroke="#d8d3c7"/>
+<text x="30" y="38" font-family="Consolas, monospace" font-size="13" font-weight="bold" fill="#1a1a1a">demo-gl-drop-timer</text>
+<line x1="10" y1="50" x2="450" y2="50" stroke="#d8d3c7"/>
+<text x="30" y="75" font-family="Consolas, monospace" font-size="12" fill="#6b6558">Project Overview</text>
+<text x="30" y="105" font-family="Consolas, monospace" font-size="11" fill="#6b6558" font-style="italic">Build</text>
+<rect x="24" y="115" width="220" height="28" rx="5" fill="#eaf1fb"/>
+<text x="34" y="133" font-family="Consolas, monospace" font-size="12" fill="#1c4c8c">Authentication</text>
+<rect x="24" y="149" width="220" height="28" rx="5" fill="#fdeee4"/>
+<text x="34" y="167" font-family="Consolas, monospace" font-size="12" fill="#a6401f">Firestore Database</text>
+<text x="34" y="196" font-family="Consolas, monospace" font-size="12" fill="#6b6558">Storage (unused)</text>
+<text x="34" y="220" font-family="Consolas, monospace" font-size="12" fill="#6b6558">Hosting (unused)</text>
+<text x="30" y="250" font-family="Consolas, monospace" font-size="11" fill="#6b6558" font-style="italic">Usage and billing</text>
+<text x="30" y="272" font-family="Consolas, monospace" font-size="12" fill="#6b6558">Plan: Spark (free)</text>
+
+<text x="270" y="128" font-family="Georgia, serif" font-size="11" fill="#1c4c8c">→ Sign-in method tab,</text>
+<text x="270" y="142" font-family="Georgia, serif" font-size="11" fill="#1c4c8c">enable Google here</text>
+<text x="270" y="162" font-family="Georgia, serif" font-size="11" fill="#a6401f">→ Data / Rules / Indexes</text>
+<text x="270" y="176" font-family="Georgia, serif" font-size="11" fill="#a6401f">/ Usage tabs</text>
+</svg>
+<p class="diagram-caption">Diagram, not a real screenshot — simplified layout of the console sidebar for a project on Spark.</p>
+</div>
+
+<p>Two things worth knowing before you touch the console yourself:</p>
+<ul>
+<li>The <span class="console-path">Authentication → Sign-in method</span> tab is where a provider (Google) gets switched on or off. Nothing in this repo can flip that toggle; it's a manual console step done once per project.</li>
+<li>The <span class="console-path">Firestore Database → Data</span> tab shows the live collection tree, exactly the shape drawn in <a href="#firestore">section 4</a>. It's the fastest way to check what a specific player's document actually contains.</li>
+</ul>
+
+<h2 id="auth">3. Firebase Authentication, in depth</h2>
+<p>Firebase Auth is a hosted identity service: it verifies who a user is and hands your app a signed token, without you ever touching a password. GL-Drop-Timer wires up exactly one provider, Google, through <a href="https://firebase.google.com/docs/auth/web/google-signin"><code>signInWithPopup</code></a>.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 640 340" role="img" aria-labelledby="dia3-title dia3-desc">
+<title id="dia3-title">Google sign-in sequence</title>
+<desc id="dia3-desc">Five steps from clicking sign in to the app showing a signed-in user.</desc>
+<g font-family="Consolas, monospace" font-size="12.5" fill="#1a1a1a">
+<rect x="20" y="10" width="600" height="46" rx="7" fill="#f1efe7" stroke="#d8d3c7"/>
+<text x="36" y="38">1. Player clicks "Sign in with Google" in the app</text>
+
+<rect x="20" y="76" width="600" height="46" rx="7" fill="#f1efe7" stroke="#d8d3c7"/>
+<text x="36" y="104">2. signInWithPopup(auth, provider) opens a Google popup</text>
+
+<rect x="20" y="142" width="600" height="46" rx="7" fill="#f1efe7" stroke="#d8d3c7"/>
+<text x="36" y="170">3. Player picks their Google account and approves</text>
+
+<rect x="20" y="208" width="600" height="46" rx="7" fill="#eaf1fb" stroke="#1c4c8c"/>
+<text x="36" y="236">4. Firebase Auth verifies it, issues a session for that uid</text>
+
+<rect x="20" y="274" width="600" height="46" rx="7" fill="#fdeee4" stroke="#a6401f"/>
+<text x="36" y="302">5. onAuthStateChanged fires, app store flips to "signed-in"</text>
+</g>
+<g stroke="#1a1a1a" marker-end="url(#arrow3)">
+<line x1="320" y1="56" x2="320" y2="74"/>
+<line x1="320" y1="122" x2="320" y2="140"/>
+<line x1="320" y1="188" x2="320" y2="206"/>
+<line x1="320" y1="254" x2="320" y2="272"/>
+</g>
+<defs>
+<marker id="arrow3" markerWidth="8" markerHeight="8" refX="4" refY="6" orient="auto">
+<path d="M0,0 L4,6 L8,0 Z" fill="#1a1a1a"/>
+</marker>
+</defs>
+</svg>
+<p class="diagram-caption">Diagram — the full round trip of a Google sign-in, matching <code>src/auth/firebaseAuth.ts</code>.</p>
+</div>
+
+<p>The four states the app tracks (<code>restoring</code>, <code>signed-out</code>, <code>signing-in</code>, <code>signed-in</code>) exist because step 4 isn't instant, and because the app needs to know on page load whether a previous session is still valid before it can show anything. <code>restoring</code> is that "don't know yet" window.</p>
+<p class="note">The Google account itself never touches GL-Drop-Timer's code. The popup, the password check, the 2FA if any, all of that happens on Google's own page. The app only ever receives the result: a <code>uid</code>, a display name, an email.</p>
+
+<h2 id="firestore">4. Cloud Firestore, in depth</h2>
+<p>Firestore is a <strong>document database</strong>: data lives in JSON-like documents, grouped into collections, which can nest subcollections inside a document. There's no fixed schema enforced by the database itself, only whatever the app and the security rules agree on. <a href="https://firebase.google.com/docs/firestore/using-console">(Manage Cloud Firestore with the console)</a></p>
+
+<pre><code>users                        (collection)
+└── {uid}                    (document, one per signed-in player)
+    └── drops                (subcollection)
+        └── {dropId}         (document, one per timer)
+              readyAt: number | null
+              updatedAt: number</code></pre>
+<p class="diagram-caption">Every path in the code (<code>doc(db, "users", uid, "drops", key)</code>) is just walking down this tree.</p>
+
+<p>Two behaviors make this feel instant instead of like a network call every time:</p>
+<ul>
+<li><strong><code>onSnapshot</code></strong>: instead of asking once, the app opens a live listener on a document. Any change, made locally or by Firestore syncing from elsewhere, re-fires the callback automatically.</li>
+<li><strong><code>persistentLocalCache</code></strong>: Firestore keeps a copy of the data in the browser's IndexedDB. Reads come from that cache instantly, writes apply to the cache immediately too (optimistic), then get pushed to the server in the background. This is what lets GL-Drop-Timer work offline. <a href="https://firebase.google.com/docs/firestore/manage-data/enable-offline">(Access data offline)</a></li>
+</ul>
+
+<h2 id="rules">5. Security rules: how a request gets judged</h2>
+<p>Because the browser talks to Firestore directly, something has to stand in for the authorization logic a normal API server would run. That's <code>firestore.rules</code>: code that Firestore's servers evaluate on every single read or write, before deciding to allow it.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 640 200" role="img" aria-labelledby="dia4-title dia4-desc">
+<title id="dia4-title">Security rule evaluation</title>
+<desc id="dia4-desc">A client request is checked against firestore.rules before Firestore allows or denies it.</desc>
+<rect x="10" y="70" width="150" height="60" rx="7" fill="#f1efe7" stroke="#d8d3c7"/>
+<text x="85" y="105" text-anchor="middle" font-family="Consolas, monospace" font-size="12.5" fill="#1a1a1a">Client request</text>
+
+<rect x="220" y="60" width="200" height="80" rx="7" fill="#fdeee4" stroke="#a6401f"/>
+<text x="320" y="90" text-anchor="middle" font-family="Consolas, monospace" font-size="12.5" fill="#1a1a1a">firestore.rules</text>
+<text x="320" y="108" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#6b6558">isOwner(userId)</text>
+<text x="320" y="124" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#6b6558">isValidDrop()</text>
+
+<rect x="480" y="10" width="150" height="50" rx="7" fill="#eef4ea" stroke="#2e5e3e"/>
+<text x="555" y="40" text-anchor="middle" font-family="Consolas, monospace" font-size="12.5" fill="#2e5e3e">allow → proceed</text>
+
+<rect x="480" y="140" width="150" height="50" rx="7" fill="#fbf3e3" stroke="#8a5a00"/>
+<text x="555" y="170" text-anchor="middle" font-family="Consolas, monospace" font-size="12.5" fill="#8a5a00">deny → error</text>
+
+<line x1="160" y1="100" x2="215" y2="100" stroke="#1a1a1a" marker-end="url(#arrow4)"/>
+<line x1="420" y1="90" x2="475" y2="45" stroke="#1a1a1a" marker-end="url(#arrow4)"/>
+<line x1="420" y1="110" x2="475" y2="155" stroke="#1a1a1a" marker-end="url(#arrow4)"/>
+<defs>
+<marker id="arrow4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+<path d="M0,0 L6,3 L0,6 Z" fill="#1a1a1a"/>
+</marker>
+</defs>
+</svg>
+<p class="diagram-caption">Diagram — every read and write passes through this check, server-side, before it touches data.</p>
+</div>
+
+<pre><code>function isOwner(userId) {
+  return request.auth != null && request.auth.uid == userId;
+}
+
+match /users/{userId}/drops/{dropId} {
+  allow read: if isOwner(userId);
+  allow create, update: if isOwner(userId) && isValidDrop();
+  allow delete: if isOwner(userId);
+}</code></pre>
+<p><code>request.auth</code> is the identity Firestore already verified through Firebase Auth; <code>request.resource.data</code> is the payload the client is trying to write. <code>isValidDrop()</code> additionally rejects any write that isn't shaped like <code>{ readyAt, updatedAt }</code> with plausible timestamps, so even a signed-in owner can't write garbage into their own documents.</p>
+<p class="source">Source: <a href="https://firebase.google.com/docs/firestore/security/get-started">Get started with Cloud Firestore Security Rules</a></p>
+
+<h2 id="emulator">6. The local emulator</h2>
+<p>Running against the real Firestore while developing means every test write is real, and mistakes are hard to undo. The <strong>Local Emulator Suite</strong> runs a fake Firestore on your machine that behaves like the real one, including enforcing the same <code>firestore.rules</code>, but resets whenever you want.</p>
+<pre><code>firebase emulators:start</code></pre>
+<p>GL-Drop-Timer configures it to listen on port 8080 (see <code>firebase.json</code> below), which is also what <code>firestoreRules.emulator.test.ts</code> and the other <code>*.emulator.test.ts</code> files in <code>src/store/</code> connect to. That's how the test suite can assert "this write should be denied" without touching production data.</p>
+<p class="source">Source: <a href="https://firebase.google.com/docs/emulator-suite/install_and_configure">Install, configure and integrate Local Emulator Suite</a></p>
+
+<h2 id="files">7. Every Firebase file in this repo</h2>
+<p>Two families: config the CLI reads and deploys, and code that runs in the player's browser.</p>
+<table>
+<tr><th>Family</th><th>Files</th><th>Read by</th></tr>
+<tr><td>Firebase project config</td><td><code>.firebaserc</code>, <code>firebase.json</code>, <code>firestore.rules</code>, <code>firestore.indexes.json</code></td><td>The <code>firebase</code> CLI</td></tr>
+<tr><td>App code</td><td><code>src/config/firebaseConfig.ts</code>, <code>src/auth/firebaseAuth.ts</code>, <code>src/store/firestoreDropStore.ts</code></td><td>The browser</td></tr>
+</table>
+
+<div class="file-card">
+<h3><span class="file-path">.firebaserc</span><span class="tag tag-config">CLI</span></h3>
+<pre><code>{
+  "projects": {
+    "default": "demo-gl-drop-timer"
+  }
+}</code></pre>
+<p>Tells the Firebase CLI which project to target by default when you run <code>firebase deploy</code> or <code>firebase emulators:start</code>. Generated by <code>firebase init</code>, normally never hand-edited.</p>
+<p class="source">Source: <a href="https://firebase.google.com/docs/cli">Firebase CLI reference</a></p>
+</div>
+
+<div class="file-card">
+<h3><span class="file-path">firebase.json</span><span class="tag tag-config">CLI</span></h3>
+<pre><code>{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "firestore": { "port": 8080 },
+    "ui": { "enabled": false }
+  }
+}</code></pre>
+<p>Two jobs: point to the rules and indexes files to deploy for Firestore, and configure the local emulator (Firestore on port 8080, web UI disabled). This is the file <code>firebase deploy</code> and <code>firebase emulators:start</code> both read.</p>
+<p class="source">Source: <a href="https://firebase.google.com/docs/emulator-suite/install_and_configure">Local Emulator Suite</a></p>
+</div>
+
+<div class="file-card">
+<h3><span class="file-path">firestore.rules</span><span class="tag tag-firestore">Firestore</span></h3>
+<p>Covered in full in <a href="#rules">section 5</a>: it's the server-side gate that lets a user only touch <code>users/{their own uid}/drops/*</code>, and only write documents shaped like <code>{ readyAt, updatedAt }</code>.</p>
+</div>
+
+<div class="file-card">
+<h3><span class="file-path">firestore.indexes.json</span><span class="tag tag-firestore">Firestore</span></h3>
+<pre><code>{ "indexes": [], "fieldOverrides": [] }</code></pre>
+<p>Empty for now: no query in the project needs a composite index. Firestore auto-creates a single-field index for every field; this file only matters for more complex queries (sorting on multiple fields, combined filters). The day a query fails with an error that hands you an index-creation link, the entry lands here.</p>
+</div>
+
+<div class="file-card">
+<h3><span class="file-path">src/config/firebaseConfig.ts</span><span class="tag tag-config">Config</span></h3>
+<pre><code>export function readFirebaseConfig(): FirebaseOptions {
+  return {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  };
+}</code></pre>
+<p>Builds the <code>FirebaseOptions</code> object from Vite environment variables (prefixed <code>VITE_</code> so they get exposed to the browser, see <code>.env.example</code>). This <code>apiKey</code> is not a secret: it identifies the Firebase project, not a user. The real protection is <code>firestore.rules</code>.</p>
+<p class="source">Source: <a href="https://firebase.google.com/docs/web/setup">Add Firebase to your JavaScript project</a></p>
+</div>
+
+<div class="file-card">
+<h3><span class="file-path">src/auth/firebaseAuth.ts</span><span class="tag tag-auth">Auth</span></h3>
+<pre><code>const app = getApps().length ? getApp() : initializeApp(config);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+onAuthStateChanged(auth, (user) => {
+  store.setState(user
+    ? { status: "signed-in", user: toAuthUser(user) }
+    : { status: "signed-out" });
+});
+
+await signInWithPopup(auth, provider);</code></pre>
+<p>The code behind the sequence in <a href="#auth">section 3</a>. Robustness detail: <code>createUnavailableAuthService</code> and the <code>try/catch</code> blocks around <code>getFirebaseApp</code> mean that if Firebase can't initialize (missing config, blocked network), the app degrades cleanly to signed-out instead of crashing.</p>
+<p class="source">Source: <a href="https://firebase.google.com/docs/auth/web/google-signin">Authenticate Using Google with JavaScript</a></p>
+</div>
+
+<div class="file-card" id="direct-call">
+<h3><span class="file-path">src/store/firestoreDropStore.ts</span><span class="tag tag-firestore">Firestore</span></h3>
+<pre><code>initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
+
+onSnapshot(doc(db, "users", uid, "drops", key), (snapshot) => { ... });
+setDoc(doc(db, "users", uid, "drops", key), { readyAt, updatedAt });</code></pre>
+<p>The code behind the tree and the offline cache from <a href="#firestore">section 4</a>. For each timer (<code>key</code>), <code>onSnapshot</code> opens a real-time listener; <code>setDoc</code> writes optimistically to the local cache first, which feeds the <code>syncStatus</code> (<code>synced</code> / <code>syncing</code> / <code>offline</code> / <code>error</code>) shown in the UI.</p>
+<p class="source">Source: <a href="https://firebase.google.com/docs/firestore/manage-data/enable-offline">Access data offline (Firestore)</a></p>
+</div>
+
+<h2 id="lifecycle">8. The full lifecycle, start to finish</h2>
+<p>Sign-in → <code>signInWithPopup</code> returns a <code>uid</code> → that <code>uid</code> builds the path <code>users/{uid}/drops/{dropId}</code> → every read/write on that path goes through <code>firestore.rules</code>, which checks <code>request.auth.uid == uid</code>. No sign-in, no <code>uid</code>, no access: the whole security model hangs on that one thread. Free plan (Spark) covers all of it: Auth and Firestore both have a generous free quota, no card required.</p>
+
+<div class="quiz" id="quiz">
+<p><strong>Recall check</strong> (answer before revealing)</p>
+<details>
+<summary>What kind of platform is Firebase?</summary>
+<p class="answer">a backend-as-a-service platform</p>
+</details>
+<details>
+<summary>What object does registering a web app in the console give you?</summary>
+<p class="answer">a Firebase config object</p>
+</details>
+<details>
+<summary>Which function opens the Google sign-in popup?</summary>
+<p class="answer">signInWithPopup</p>
+</details>
+<details>
+<summary>Which file decides whether a Firestore write is accepted or not?</summary>
+<p class="answer">firestore.rules</p>
+</details>
+<details>
+<summary>Which function turns on the Firestore offline cache?</summary>
+<p class="answer">initializeFirestore</p>
+</details>
+<details>
+<summary>Which field in the rules identifies the signed-in user?</summary>
+<p class="answer">request.auth.uid</p>
+</details>
+<details>
+<summary>What runs a fake Firestore on your machine for tests?</summary>
+<p class="answer">the Local Emulator Suite</p>
+</details>
+</div>
+
+<p class="note">Natural next step in the zone of proximal development: open your own console at <a href="https://console.firebase.google.com">console.firebase.google.com</a> and follow along with sections 2, 3 and 4 on the real project, then edit <code>firestore.rules</code> for a new field. Say the word for a lesson on either.</p>
+
+<p class="ask-agent">Something unclear? Ask the agent, it's your teacher here.</p>
+
+<div class="next-links">
+<a href="../reference/glossary-firebase.html">Firebase glossary →</a>
+</div>
+</body>
+</html>

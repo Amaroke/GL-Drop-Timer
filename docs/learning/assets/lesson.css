@@ -1,0 +1,250 @@
+:root {
+  --ink: #1a1a1a;
+  --paper: #fdfcf9;
+  --rule: #d8d3c7;
+  --accent: #a6401f;
+  --muted: #6b6558;
+  --code-bg: #f1efe7;
+  --ok: #2e5e3e;
+  --warn: #8a5a00;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 18px; }
+
+body {
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+  max-width: 42rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  line-height: 1.55;
+}
+
+h1, h2, h3 {
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2rem;
+  margin: 0 0 0.3rem;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 0.5rem;
+}
+
+.kicker {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1.5rem;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin: 2.5rem 0 0.6rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--rule);
+}
+
+h3 {
+  font-size: 1.05rem;
+  margin: 1.3rem 0 0.4rem;
+}
+
+p { margin: 0.7rem 0; }
+
+a { color: var(--accent); text-decoration-thickness: 1px; }
+a:visited { color: var(--accent); }
+
+code, pre {
+  font-family: "SF Mono", Consolas, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+code {
+  background: var(--code-bg);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--code-bg);
+  padding: 0.9rem 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  border-left: 3px solid var(--accent);
+  margin: 0.8rem 0;
+}
+
+pre code { background: none; padding: 0; }
+
+.file-card {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  margin: 1.2rem 0;
+  background: #fffefb;
+}
+
+.file-card > h3 {
+  margin-top: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.file-path {
+  font-family: "SF Mono", Consolas, Menlo, monospace;
+  font-size: 0.95rem;
+  background: var(--code-bg);
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+}
+
+.tag {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.tag-auth { background: #eaf1fb; color: #1c4c8c; }
+.tag-firestore { background: #fdeee4; color: var(--accent); }
+.tag-config { background: #eef4ea; color: var(--ok); }
+
+.note {
+  border-left: 3px solid var(--warn);
+  background: #fbf3e3;
+  padding: 0.6rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.callout {
+  border-left: 3px solid var(--accent);
+  padding: 0.2rem 0 0.2rem 1rem;
+  margin: 1.2rem 0;
+  font-style: italic;
+  color: #3a352b;
+}
+
+.source {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.4rem;
+}
+
+.quiz {
+  border: 1px dashed var(--rule);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+}
+
+.quiz p { margin: 0.4rem 0; }
+
+.quiz summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.quiz .answer {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--code-bg);
+  border-radius: 4px;
+}
+
+.next-links {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.95rem;
+}
+
+.ask-agent {
+  margin-top: 2.5rem;
+  padding: 1rem 1.2rem;
+  background: #eef4ea;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+th { color: var(--muted); font-weight: 600; }
+
+.toc {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 0.9rem 1.4rem;
+  margin: 1.5rem 0 2rem;
+  background: #fffefb;
+  font-size: 0.9rem;
+}
+
+.toc p { margin: 0 0 0.4rem; font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.06em; }
+
+.toc ol { margin: 0; padding-left: 1.2rem; }
+.toc li { margin: 0.15rem 0; }
+
+.diagram {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: #fffefb;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+.diagram-caption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.screenshot-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+  margin: -0.3rem 0 0.8rem;
+}
+
+.console-path {
+  font-family: "SF Mono", Consolas, Menlo, monospace;
+  font-size: 0.85rem;
+  background: var(--code-bg);
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  display: inline-block;
+  margin: 0.4rem 0;
+}
+
+@media print {
+  body { max-width: none; padding: 0 1cm; }
+  a { color: var(--ink); }
+  .ask-agent, .next-links { display: none; }
+}
