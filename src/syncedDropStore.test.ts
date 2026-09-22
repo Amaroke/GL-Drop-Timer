@@ -173,6 +173,38 @@ describe("createSyncedDropStore", () => {
     expect(store.get("drop-a")?.readyAt).toBe(1000);
   });
 
+  it("does not tear down and rebuild subscriptions when auth re-fires signed-in for the same uid", async () => {
+    const authStore = createAuthStore({ status: "signed-out" });
+    const localStore = createMemoryDropStore();
+    const remoteStore = createMemoryDropStore({ "drop-a": 9000 });
+    const subscribeSpy = vi.spyOn(remoteStore, "subscribe");
+    const store = createSyncedDropStore({
+      auth: authServiceFrom(authStore),
+      localStore,
+      createRemoteStore: () => remoteStore,
+      mergeLocalIntoRemote: async () => {},
+    });
+    const onChange = vi.fn();
+    store.subscribe("drop-a", onChange);
+
+    authStore.setState({
+      status: "signed-in",
+      user: { uid: "1", displayName: null, email: null },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    subscribeSpy.mockClear();
+
+    authStore.setState({
+      status: "signed-in",
+      user: { uid: "1", displayName: null, email: null },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(subscribeSpy).not.toHaveBeenCalled();
+  });
+
   it("re-merges before switching when a write races the in-flight merge", async () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
