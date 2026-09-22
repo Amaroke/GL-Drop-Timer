@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { AccountControl } from "./AccountControl";
 import type { AuthService } from "./auth";
 import type { DropStore } from "./dropStore";
 import { DROPS } from "./drops";
+import { Modal } from "./Modal";
 import { NotificationsControl } from "./NotificationsControl";
 import { PlannerPlaceholder } from "./PlannerPlaceholder";
 import { TimerCard } from "./TimerCard";
+import { TimerChip } from "./TimerChip";
 import { useReadyDropTitle } from "./useReadyDropTitle";
 import { useReadyNotifications } from "./useReadyNotifications";
 
@@ -19,6 +22,8 @@ const STORAGE_KEYS = DROPS.map((drop) => drop.storageKey);
 function App({ store, auth, now }: AppProps) {
   useReadyDropTitle(store, STORAGE_KEYS, now);
   const { permission, requestPermission } = useReadyNotifications(DROPS, store, now);
+  const [advancedDropKey, setAdvancedDropKey] = useState<string | null>(null);
+  const advancedDrop = DROPS.find((drop) => drop.storageKey === advancedDropKey) ?? null;
 
   return (
     <div className="mx-auto flex min-h-svh max-w-4xl flex-col px-6 py-8">
@@ -28,9 +33,15 @@ function App({ store, auth, now }: AppProps) {
             <NotificationsControl permission={permission} requestPermission={requestPermission} />
           </div>
 
-          <div className="grid w-full grid-cols-1 gap-4 sm:flex-1 sm:grid-cols-3 sm:gap-6">
+          <div className="flex flex-col gap-3 sm:flex-1 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
             {DROPS.map((drop) => (
-              <TimerCard key={drop.storageKey} {...drop} store={store} now={now} />
+              <TimerChip
+                key={drop.storageKey}
+                {...drop}
+                store={store}
+                now={now}
+                onOpenAdvanced={() => setAdvancedDropKey(drop.storageKey)}
+              />
             ))}
           </div>
 
@@ -39,6 +50,15 @@ function App({ store, auth, now }: AppProps) {
 
         <PlannerPlaceholder />
       </main>
+
+      {advancedDrop && (
+        <Modal
+          label={`Advanced settings for ${advancedDrop.name}`}
+          onClose={() => setAdvancedDropKey(null)}
+        >
+          <TimerCard key={advancedDrop.storageKey} {...advancedDrop} store={store} now={now} />
+        </Modal>
+      )}
 
       <footer className="mt-12 text-center text-sm text-white/30">
         Timers are saved in your browser.

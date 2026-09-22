@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import type { DropStore } from "./dropStore";
-import {
-  formatDuration,
-  formatReadyDate,
-  toDatetimeLocalValue,
-  useCountdown,
-} from "./useCountdown";
+import { formatDuration, formatReadyDate, toDatetimeLocalValue } from "./useCountdown";
+import { useDropTimer } from "./useDropTimer";
+import { GearIcon } from "./GearIcon";
 
 type TimerCardProps = {
   storageKey: string;
@@ -26,38 +23,27 @@ export function TimerCard({
   store,
   now,
 }: TimerCardProps) {
-  const [readyAt, setReadyAt] = useState<number | null>(
-    () => store.get(storageKey)?.readyAt ?? null,
+  const { readyAt, remaining, isReady, isRunning, collect, reset, setManualReadyAt } = useDropTimer(
+    storageKey,
+    cooldownHours,
+    store,
+    now,
   );
+
   const [isEditing, setIsEditing] = useState(false);
   const [draftDate, setDraftDate] = useState("");
   const [editorError, setEditorError] = useState<string | null>(null);
   const [isConfirmingReset, setIsConfirmingReset] = useState(false);
 
-  const remaining = useCountdown(readyAt, now);
-  const isReady = readyAt !== null && remaining === 0;
-
   useEffect(
-    () =>
-      store.subscribe(storageKey, () => {
-        setReadyAt(store.get(storageKey)?.readyAt ?? null);
-        setIsConfirmingReset(false);
-      }),
+    () => store.subscribe(storageKey, () => setIsConfirmingReset(false)),
     [storageKey, store],
   );
 
-  const isRunning = readyAt !== null && !isReady;
-  const collect = () => {
-    const timestamp = now();
-    const value = timestamp + cooldownHours * 3600 * 1000;
-    setReadyAt(value);
-    store.set(storageKey, value, timestamp);
-  };
   const askResetConfirmation = () => setIsConfirmingReset(true);
   const cancelReset = () => setIsConfirmingReset(false);
   const confirmReset = () => {
-    setReadyAt(null);
-    store.set(storageKey, null, now());
+    reset();
     setIsConfirmingReset(false);
   };
 
@@ -79,8 +65,7 @@ export function TimerCard({
       setEditorError("Invalid date. Enter a valid date and time.");
       return;
     }
-    setReadyAt(timestamp);
-    store.set(storageKey, timestamp, now());
+    setManualReadyAt(timestamp);
     closeEditor();
   };
 
@@ -101,18 +86,7 @@ export function TimerCard({
         aria-label={`Set ${name} Ready date manually`}
         className="absolute top-3 left-3 flex h-6 w-6 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/80"
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-3.5 w-3.5"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
+        <GearIcon className="h-3.5 w-3.5" />
       </button>
 
       {readyAt !== null && !isEditing && !isConfirmingReset && (
