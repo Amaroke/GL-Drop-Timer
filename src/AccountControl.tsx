@@ -51,10 +51,7 @@ export function AccountControl({ auth, store }: AccountControlProps) {
           <span className="max-w-32 truncate">{label}</span>
           {syncStatus && <SyncStatusDot status={syncStatus} />}
         </span>
-        <span
-          className="w-px shrink-0 self-stretch bg-white/15"
-          aria-hidden="true"
-        />
+        <span className="w-px shrink-0 self-stretch bg-white/15" aria-hidden="true" />
         <button
           type="button"
           onClick={() => auth.signOut()}
