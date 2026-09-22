@@ -19,7 +19,9 @@ export function Modal({ label, onClose, children }: ModalProps) {
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const focusable = contentRef.current ? focusableElements(contentRef.current) : [];
+    const focusable = contentRef.current
+      ? focusableElements(contentRef.current)
+      : [];
     focusable[0]?.focus();
 
     return () => previouslyFocused?.focus();
@@ -67,7 +69,7 @@ export function Modal({ label, onClose, children }: ModalProps) {
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute -top-3 -right-3 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-[#17132b] text-white/60 transition-colors hover:bg-white/10 hover:text-white/90"
+          className="absolute -top-3 -right-3 flex h-7 w-7 z-100 items-center justify-center rounded-full border border-white/10 bg-[#17132b] text-white/60 transition-colors hover:bg-white/30 hover:text-white/90"
         >
           <svg
             viewBox="0 0 24 24"
