@@ -1,10 +1,10 @@
 ## Git
 
-After each commit created by /implement, push the current branch to origin without asking for confirmation. Never push to main: GitHub branch protection enforces this (PR + passing CI required), except for the repo admin.
+Before creating a commit, even during /implement, show what changed and wait for confirmation. For UI work, run the app first and say what was verified. Push only after a separate confirmation. Never push to main: GitHub branch protection enforces this (PR + passing CI required), except for the repo admin.
 
 ## End of an /implement
 
-Once the commit is pushed and the review is done, create the PR to main with `gh pr create`: short title reflecting the purpose of the commit, body with a summary, the acceptance criteria covered, the tests added and `Closes #N` for the issue that was worked on. If a PR already exists for the branch, update it instead of creating another one. The user only has to review and merge.
+Once a commit is confirmed, pushed, and the review is done, create the PR to main with `gh pr create`: short title reflecting the purpose of the commit, body with a summary, the acceptance criteria covered, the tests added and `Closes #N` for the issue that was worked on. If a PR already exists for the branch, update it instead of creating another one. The user only has to review and merge.
 
 ## Agent skills
 
