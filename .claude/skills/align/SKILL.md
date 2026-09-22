@@ -1,11 +1,10 @@
 ---
 name: align
-description: Reconcile local branches and GitHub issues with GitHub's current state, after merging a PR or closing an issue by hand on GitHub instead of through /implement.
-argument-hint: "numéro de PR ou d'issue à cibler (optionnel, sinon scanne toutes les branches mergées)"
+description: Reconcile local branches and GitHub issues with GitHub's current state, after merging a PR or closing an issue by hand on GitHub.
 disable-model-invocation: false
 ---
 
-Run after acting directly on GitHub (merging a PR, closing an issue) rather than through `/implement`'s own end-of-flow. Same reconciliation, entered from GitHub's state instead of from a just-created PR.
+Run after acting directly on GitHub (merging a PR, closing an issue). Same reconciliation, entered from GitHub's state instead of from a just-created PR.
 
 If a PR or issue number is given, scope every step below to it. Otherwise, work from every local branch whose upstream just disappeared.
 
@@ -33,6 +32,6 @@ Done when every issue linked to a branch cleaned up in step 1 has correct labels
 
 ## 3. Pick what comes next
 
-If there's an open, unblocked issue related to the one just handled (same parent, or unblocked by it), propose it to the user and, if accepted, create its branch from the up-to-date main.
+If there's an open, unblocked issue related to the one just handled (same parent, or unblocked by it), propose it to the user and, ask him to reset the current context/session.
 
 Otherwise, stay on the up-to-date main.
