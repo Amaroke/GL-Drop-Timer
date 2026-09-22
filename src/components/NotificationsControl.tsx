@@ -23,10 +23,7 @@ const BELL_ICON = (
   </svg>
 );
 
-export function NotificationsControl({
-  permission,
-  requestPermission,
-}: NotificationsControlProps) {
+export function NotificationsControl({ permission, requestPermission }: NotificationsControlProps) {
   const [result, setResult] = useState<"granted" | "denied" | null>(null);
 
   if (permission === "unsupported") return null;
@@ -50,30 +47,21 @@ export function NotificationsControl({
       ) : (
         <p className={`${PILL_BASE_CLASSES} text-white/40`}>
           {BELL_ICON}
-          {permission === "granted"
-            ? "Notifications enabled"
-            : "Notifications blocked"}
+          {permission === "granted" ? "Notifications enabled" : "Notifications blocked"}
         </p>
       )}
       {result && (
         <Modal
-          label={
-            result === "granted"
-              ? "Notifications enabled"
-              : "Notifications blocked"
-          }
+          label={result === "granted" ? "Notifications enabled" : "Notifications blocked"}
           onClose={() => setResult(null)}
         >
           <div className="rounded-2xl border border-white/10 bg-[#12101f] p-6 text-center text-sm text-white/70">
             {result === "granted" ? (
-              <p>
-                Notifications enabled. You will be notified when a Drop is
-                ready.
-              </p>
+              <p>Notifications enabled. You will be notified when a Drop is ready.</p>
             ) : (
               <p>
-                Notifications blocked. You can allow them from your browser's
-                site settings if you change your mind.
+                Notifications blocked. You can allow them from your browser's site settings if you
+                change your mind.
               </p>
             )}
           </div>
