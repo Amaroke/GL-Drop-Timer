@@ -14,6 +14,71 @@ function card(name: string) {
 }
 
 describe("App", () => {
+  describe("layout", () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        "Notification",
+        Object.assign(function () {}, { permission: "default", requestPermission: vi.fn() }),
+      );
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("does not show an app title", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      expect(screen.queryByText("GL Drop Timer")).toBeNull();
+      expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    });
+
+    it("hides the notifications icon below the sm breakpoint, keeping timers and account reachable", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      const notifications = screen.getByRole("button", { name: "Notifications" });
+      expect(notifications.closest(".hidden")).toHaveClass("hidden", "sm:block");
+      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Account" })).toBeInTheDocument();
+    });
+
+    it("keeps the Drop timers and the Planner inside the main landmark", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      const main = screen.getByRole("main");
+      expect(within(main).getByText("Star Battery")).toBeInTheDocument();
+      expect(within(main).getByText("Planner")).toBeInTheDocument();
+    });
+  });
+
+  describe("Planner placeholder", () => {
+    it("shows 12 tabs for the main planet and every Colony slot, the main planet active by default", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs).toHaveLength(12);
+      expect(tabs[0]).toHaveAccessibleName("Planet");
+      expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    });
+
+    it("switches the active tab when the player clicks another one", async () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await userEvent.click(screen.getByRole("tab", { name: "Colony 1" }));
+
+      expect(screen.getByRole("tab", { name: "Colony 1" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+      expect(screen.getByRole("tab", { name: "Planet" })).toHaveAttribute("aria-selected", "false");
+    });
+
+    it("shows a preview table of Buildings under the active tab", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      const panel = screen.getByRole("tabpanel");
+      expect(within(panel).getByRole("table")).toBeInTheDocument();
+      expect(screen.getByText(/preview/i)).toBeInTheDocument();
+    });
+  });
+
   it("shows a Drop with no saved Ready date as not started", () => {
     render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
@@ -438,7 +503,14 @@ describe("App", () => {
       });
     }
 
+    async function openNotifications() {
+      await act(async () => {
+        screen.getByRole("button", { name: "Notifications" }).click();
+      });
+    }
+
     async function enableNotifications() {
+      await openNotifications();
       await act(async () => {
         screen.getByRole("button", { name: "Enable notifications" }).click();
       });
@@ -450,11 +522,12 @@ describe("App", () => {
       vi.unstubAllGlobals();
     });
 
-    it("never requests permission on first load", () => {
+    it("never requests permission on first load", async () => {
       const { requestPermission } = installFakeNotification("default");
 
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       tick(5000);
+      await openNotifications();
 
       expect(requestPermission).not.toHaveBeenCalled();
       expect(screen.getByRole("button", { name: "Enable notifications" })).toBeEnabled();
@@ -590,7 +663,7 @@ describe("App", () => {
       expect(sent).toHaveLength(1);
     });
 
-    it("keeps working and sends nothing when permission is denied", () => {
+    it("keeps working and sends nothing when permission is denied", async () => {
       const { sent } = installFakeNotification("denied");
       let time = NOW;
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
@@ -600,6 +673,7 @@ describe("App", () => {
       tick();
       time = NOW + 12 * 3600 * 1000;
       tick();
+      await openNotifications();
 
       expect(card("Star Battery").getByText("Ready!")).toBeInTheDocument();
       expect(sent).toHaveLength(0);
@@ -628,14 +702,20 @@ describe("App", () => {
 
       expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
       expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Notifications" })).toBeNull();
     });
   });
 
   describe("account", () => {
+    async function openAccount() {
+      await userEvent.click(screen.getByRole("button", { name: "Account" }));
+    }
+
     it("lets a visitor use a Drop timer without signing in", async () => {
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await openAccount();
 
       expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeEnabled();
@@ -646,6 +726,7 @@ describe("App", () => {
         Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: "ada@example.com" }),
       );
       render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+      await openAccount();
 
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
@@ -659,6 +740,7 @@ describe("App", () => {
         Promise.resolve({ uid: "1", displayName: null, email: "ada@example.com" }),
       );
       render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+      await openAccount();
 
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
@@ -670,6 +752,7 @@ describe("App", () => {
         Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: "ada@example.com" }),
       );
       render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+      await openAccount();
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
       await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
@@ -681,6 +764,7 @@ describe("App", () => {
     it("quietly returns to signed out when the sign-in popup is cancelled", async () => {
       const auth = createMemoryAuthService(() => Promise.reject(new Error("popup closed")));
       render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+      await openAccount();
 
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
@@ -695,6 +779,7 @@ describe("App", () => {
         Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: "ada@example.com" }),
       );
       render(<App store={store} auth={auth} now={() => NOW} />);
+      await openAccount();
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
       await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
