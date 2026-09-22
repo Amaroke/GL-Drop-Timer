@@ -26,7 +26,9 @@ export function TimerCard({
   store,
   now,
 }: TimerCardProps) {
-  const [readyAt, setReadyAt] = useState<number | null>(() => store.get(storageKey));
+  const [readyAt, setReadyAt] = useState<number | null>(
+    () => store.get(storageKey)?.readyAt ?? null,
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [draftDate, setDraftDate] = useState("");
   const [editorError, setEditorError] = useState<string | null>(null);
@@ -35,25 +37,27 @@ export function TimerCard({
   const remaining = useCountdown(readyAt, now);
   const isReady = readyAt !== null && remaining === 0;
 
-  useEffect(() => {
-    store.set(storageKey, readyAt);
-  }, [readyAt, storageKey, store]);
-
   useEffect(
     () =>
       store.subscribe(storageKey, () => {
-        setReadyAt(store.get(storageKey));
+        setReadyAt(store.get(storageKey)?.readyAt ?? null);
         setIsConfirmingReset(false);
       }),
     [storageKey, store],
   );
 
   const isRunning = readyAt !== null && !isReady;
-  const collect = () => setReadyAt(now() + cooldownHours * 3600 * 1000);
+  const collect = () => {
+    const timestamp = now();
+    const value = timestamp + cooldownHours * 3600 * 1000;
+    setReadyAt(value);
+    store.set(storageKey, value, timestamp);
+  };
   const askResetConfirmation = () => setIsConfirmingReset(true);
   const cancelReset = () => setIsConfirmingReset(false);
   const confirmReset = () => {
     setReadyAt(null);
+    store.set(storageKey, null, now());
     setIsConfirmingReset(false);
   };
 
@@ -76,6 +80,7 @@ export function TimerCard({
       return;
     }
     setReadyAt(timestamp);
+    store.set(storageKey, timestamp, now());
     closeEditor();
   };
 

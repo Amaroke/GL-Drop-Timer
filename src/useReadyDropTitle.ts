@@ -11,7 +11,7 @@ export function useReadyDropTitle(store: DropStore, storageKeys: string[], now: 
   }, []);
 
   const readyCount = storageKeys.filter((key) => {
-    const readyAt = store.get(key);
+    const readyAt = store.get(key)?.readyAt ?? null;
     return readyAt !== null && readyAt <= now();
   }).length;
 
