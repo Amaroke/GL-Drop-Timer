@@ -34,7 +34,7 @@ function isTransientError(error: unknown): boolean {
 }
 
 function createOnlineWatcher() {
-  let isOnline = typeof navigator === "undefined" ? true : navigator.onLine;
+  let isOnline = typeof navigator?.onLine === "boolean" ? navigator.onLine : true;
   const notifier = createNotifier<boolean>();
   if (typeof window !== "undefined") {
     window.addEventListener("online", () => {
