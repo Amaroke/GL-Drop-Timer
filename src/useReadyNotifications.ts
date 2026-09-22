@@ -22,7 +22,7 @@ export function useReadyNotifications(
 
   const readState = useCallback(
     (storageKey: string) => {
-      const readyAt = store.get(storageKey);
+      const readyAt = store.get(storageKey)?.readyAt ?? null;
       if (readyAt === null) return "idle";
       return readyAt > now() ? "running" : "ready";
     },

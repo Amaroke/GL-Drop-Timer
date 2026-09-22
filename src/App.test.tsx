@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { createLocalStorageDropStore, createMemoryDropStore } from "./dropStore";
+import { createLocalStorageDropStore, createMemoryDropStore, OLDEST_UPDATED_AT } from "./dropStore";
 
 const NOW = new Date("2026-01-01T12:00:00").getTime();
 
@@ -110,7 +110,7 @@ describe("App", () => {
       await startAndPressReset("Star Battery");
 
       expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
-      expect(store.get("gl-timer-star-battery")).toBe(NOW + 11 * 3600 * 1000);
+      expect(store.get("gl-timer-star-battery")?.readyAt).toBe(NOW + 11 * 3600 * 1000);
 
       expect(card("Star Battery").getByText(/reset this timer\?/i)).toBeInTheDocument();
       expect(card("Star Battery").getByRole("button", { name: "Reset" })).toBeVisible();
@@ -127,7 +127,7 @@ describe("App", () => {
       expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
       expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
       expect(card("Star Battery").queryByRole("button", { name: "Reset" })).toBeNull();
-      expect(store.get("gl-timer-star-battery")).toBeNull();
+      expect(store.get("gl-timer-star-battery")?.readyAt).toBeNull();
     });
 
     it("keeps the Ready date when the player cancels", async () => {
@@ -139,7 +139,7 @@ describe("App", () => {
 
       expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
       expect(card("Star Battery").queryByRole("button", { name: "Reset" })).toBeNull();
-      expect(store.get("gl-timer-star-battery")).toBe(NOW + 11 * 3600 * 1000);
+      expect(store.get("gl-timer-star-battery")?.readyAt).toBe(NOW + 11 * 3600 * 1000);
     });
 
     it("only asks for the Drop whose reset was pressed", async () => {
@@ -150,6 +150,63 @@ describe("App", () => {
 
       expect(card("Tool Case").queryByRole("button", { name: "Reset" })).toBeNull();
       expect(card("Tool Case").getByText("23:00:00")).toBeInTheDocument();
+    });
+  });
+
+  describe("updated-at tracking", () => {
+    it("records the current time as updated-at when a Drop is Collected", async () => {
+      const store = createMemoryDropStore();
+      render(<App store={store} now={() => NOW} />);
+
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+
+      expect(store.get("gl-timer-star-battery")?.updatedAt).toBe(NOW);
+    });
+
+    it("records the current time as updated-at when a Ready date is edited manually", async () => {
+      const store = createMemoryDropStore();
+      render(<App store={store} now={() => NOW} />);
+
+      await userEvent.click(
+        card("Star Battery").getByRole("button", { name: "Set Star Battery Ready date manually" }),
+      );
+      const input = card("Star Battery").getByDisplayValue(/.*/) as HTMLInputElement;
+      await userEvent.clear(input);
+      await userEvent.type(input, "2026-01-01T18:30");
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Save" }));
+
+      expect(store.get("gl-timer-star-battery")?.updatedAt).toBe(NOW);
+    });
+
+    it("records the current time as updated-at when a Drop is reset", async () => {
+      const store = createMemoryDropStore();
+      render(<App store={store} now={() => NOW} />);
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
+      );
+
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Reset" }));
+
+      expect(store.get("gl-timer-star-battery")?.updatedAt).toBe(NOW);
+    });
+
+    describe("a legacy value stored before this change", () => {
+      beforeEach(() => localStorage.clear());
+      afterEach(() => localStorage.clear());
+
+      it("is read as the current Ready date and treated as the oldest possible value", () => {
+        localStorage.setItem("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
+        const store = createLocalStorageDropStore();
+
+        render(<App store={store} now={() => NOW} />);
+
+        expect(card("Star Battery").getByText("03:00:00")).toBeInTheDocument();
+        expect(store.get("gl-timer-star-battery")).toEqual({
+          readyAt: NOW + 3 * 3600 * 1000,
+          updatedAt: OLDEST_UPDATED_AT,
+        });
+      });
     });
   });
 
