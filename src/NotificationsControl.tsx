@@ -1,9 +1,11 @@
+import { useState } from "react";
+import { Modal } from "./Modal";
 import { PILL_BASE_CLASSES } from "./pillStyles";
 import type { NotificationPermissionState } from "./useReadyNotifications";
 
 type NotificationsControlProps = {
   permission: NotificationPermissionState;
-  requestPermission: () => void;
+  requestPermission: () => Promise<NotificationPermissionState>;
 };
 
 const BELL_ICON = (
@@ -22,25 +24,49 @@ const BELL_ICON = (
 );
 
 export function NotificationsControl({ permission, requestPermission }: NotificationsControlProps) {
+  const [result, setResult] = useState<"granted" | "denied" | null>(null);
+
   if (permission === "unsupported") return null;
 
-  if (permission === "default") {
-    return (
-      <button
-        type="button"
-        onClick={requestPermission}
-        className={`${PILL_BASE_CLASSES} text-white transition-colors hover:bg-white/12`}
-      >
-        {BELL_ICON}
-        Enable notifications
-      </button>
-    );
-  }
+  const handleEnable = async () => {
+    const outcome = await requestPermission();
+    if (outcome === "granted" || outcome === "denied") setResult(outcome);
+  };
 
   return (
-    <p className={`${PILL_BASE_CLASSES} text-white/40`}>
-      {BELL_ICON}
-      {permission === "granted" ? "Notifications enabled" : "Notifications blocked"}
-    </p>
+    <>
+      {permission === "default" ? (
+        <button
+          type="button"
+          onClick={handleEnable}
+          className={`${PILL_BASE_CLASSES} text-white transition-colors hover:bg-white/12`}
+        >
+          {BELL_ICON}
+          Enable notifications
+        </button>
+      ) : (
+        <p className={`${PILL_BASE_CLASSES} text-white/40`}>
+          {BELL_ICON}
+          {permission === "granted" ? "Notifications enabled" : "Notifications blocked"}
+        </p>
+      )}
+      {result && (
+        <Modal
+          label={result === "granted" ? "Notifications enabled" : "Notifications blocked"}
+          onClose={() => setResult(null)}
+        >
+          <div className="rounded-2xl border border-white/10 bg-[#12101f] p-6 text-center text-sm text-white/70">
+            {result === "granted" ? (
+              <p>Notifications enabled. You will be notified when a Drop is ready.</p>
+            ) : (
+              <p>
+                Notifications blocked. You can allow them from your browser's site settings if you
+                change your mind.
+              </p>
+            )}
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }

@@ -566,6 +566,24 @@ describe("App", () => {
       expect(screen.getByText("Notifications enabled")).toBeInTheDocument();
     });
 
+    it("shows a popup confirming notifications were enabled", async () => {
+      installFakeNotification("default");
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await enableNotifications();
+
+      expect(screen.getByRole("dialog", { name: "Notifications enabled" })).toBeInTheDocument();
+    });
+
+    it("shows a popup explaining notifications were blocked", async () => {
+      installFakeNotification("default", "denied");
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await enableNotifications();
+
+      expect(screen.getByRole("dialog", { name: "Notifications blocked" })).toBeInTheDocument();
+    });
+
     it("sends one notification per Drop when it goes from running to Ready", () => {
       const { sent } = installFakeNotification("granted");
       let time = NOW;
@@ -750,10 +768,8 @@ describe("App", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
-      expect(
-        screen.getByRole("button", { name: "Signed in as Ada Lovelace. Click to sign out." }),
-      ).toBeEnabled();
       expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Sign out" })).toBeEnabled();
       expect(screen.queryByRole("button", { name: "Sign in with Google" })).toBeNull();
     });
 
@@ -775,12 +791,23 @@ describe("App", () => {
       render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
-      await userEvent.click(
-        screen.getByRole("button", { name: "Signed in as Ada Lovelace. Click to sign out." }),
-      );
+      await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
 
       expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeEnabled();
       expect(screen.queryByText("Ada Lovelace")).toBeNull();
+    });
+
+    it("does not sign out when the player clicks the account name", async () => {
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: "ada@example.com" }),
+      );
+      render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      await userEvent.click(screen.getByText("Ada Lovelace"));
+
+      expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Sign out" })).toBeEnabled();
     });
 
     it("quietly returns to signed out when the sign-in popup is cancelled", async () => {
@@ -890,6 +917,50 @@ describe("App", () => {
       await userEvent.tab({ shift: true });
 
       expect(document.activeElement).toBe(buttons[buttons.length - 1]);
+    });
+  });
+
+  describe("the chip stays in sync with the advanced card", () => {
+    beforeEach(() => localStorage.clear());
+    afterEach(() => localStorage.clear());
+
+    it("updates the chip immediately when the Drop is relaunched from the advanced card", async () => {
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await openAdvanced("Star Battery");
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+
+      expect(chip("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+    });
+
+    it("updates the chip immediately when a manual Ready date is saved in the advanced card", async () => {
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await openAdvanced("Star Battery");
+      await userEvent.click(
+        card("Star Battery").getByRole("button", { name: "Set Star Battery Ready date manually" }),
+      );
+      const input = card("Star Battery").getByDisplayValue(/.*/) as HTMLInputElement;
+      await userEvent.clear(input);
+      await userEvent.type(input, "2026-01-01T18:30");
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Save" }));
+
+      expect(chip("Star Battery").getByText("06:30:00")).toBeInTheDocument();
+    });
+
+    it("updates the chip immediately when the Drop is reset from the advanced card", async () => {
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
+
+      await openAdvanced("Star Battery");
+      await userEvent.click(
+        card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
+      );
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Reset" }));
+
+      expect(chip("Star Battery").getByText("--:--:--")).toBeInTheDocument();
     });
   });
 });

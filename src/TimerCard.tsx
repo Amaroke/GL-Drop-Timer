@@ -1,44 +1,40 @@
-import { useEffect, useState } from "react";
-import type { DropStore } from "./dropStore";
+import { useState } from "react";
 import { formatDuration, formatReadyDate, toDatetimeLocalValue } from "./useCountdown";
-import { useDropTimer } from "./useDropTimer";
+import type { DropTimerState } from "./useDropsTimers";
 import { GearIcon } from "./GearIcon";
 
-type TimerCardProps = {
-  storageKey: string;
+type TimerCardProps = DropTimerState & {
   name: string;
   image: string;
   cooldownHours: number;
   accent: string;
-  store: DropStore;
   now: () => number;
 };
 
 export function TimerCard({
-  storageKey,
   name,
   image,
   cooldownHours,
   accent,
-  store,
   now,
+  readyAt,
+  remaining,
+  isReady,
+  isRunning,
+  collect,
+  reset,
+  setManualReadyAt,
 }: TimerCardProps) {
-  const { readyAt, remaining, isReady, isRunning, collect, reset, setManualReadyAt } = useDropTimer(
-    storageKey,
-    cooldownHours,
-    store,
-    now,
-  );
-
   const [isEditing, setIsEditing] = useState(false);
   const [draftDate, setDraftDate] = useState("");
   const [editorError, setEditorError] = useState<string | null>(null);
   const [isConfirmingReset, setIsConfirmingReset] = useState(false);
 
-  useEffect(
-    () => store.subscribe(storageKey, () => setIsConfirmingReset(false)),
-    [storageKey, store],
-  );
+  const [lastReadyAt, setLastReadyAt] = useState(readyAt);
+  if (readyAt !== lastReadyAt) {
+    setLastReadyAt(readyAt);
+    setIsConfirmingReset(false);
+  }
 
   const askResetConfirmation = () => setIsConfirmingReset(true);
   const cancelReset = () => setIsConfirmingReset(false);
@@ -94,9 +90,9 @@ export function TimerCard({
           type="button"
           onClick={askResetConfirmation}
           aria-label={`Reset ${name} timer`}
-          className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full text-red-500/70 transition-colors hover:bg-red-500/10 hover:text-red-500"
+          className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-400"
         >
-          ✕
+          Reset
         </button>
       )}
 

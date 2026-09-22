@@ -1,41 +1,30 @@
-import type { DropStore } from "./dropStore";
 import { formatDuration } from "./useCountdown";
-import { useDropTimer } from "./useDropTimer";
+import type { DropTimerState } from "./useDropsTimers";
 import { GearIcon } from "./GearIcon";
 
-type TimerChipProps = {
-  storageKey: string;
+type TimerChipProps = DropTimerState & {
   name: string;
   image: string;
-  cooldownHours: number;
   accent: string;
-  store: DropStore;
-  now: () => number;
   onOpenAdvanced: () => void;
 };
 
 export function TimerChip({
-  storageKey,
   name,
   image,
-  cooldownHours,
   accent,
-  store,
-  now,
+  readyAt,
+  remaining,
+  isReady,
+  isRunning,
+  collect,
   onOpenAdvanced,
 }: TimerChipProps) {
-  const { readyAt, remaining, isReady, isRunning, collect } = useDropTimer(
-    storageKey,
-    cooldownHours,
-    store,
-    now,
-  );
-
   return (
     <div
       role="group"
       aria-label={`${name} timer`}
-      className="relative flex items-center gap-2.5 rounded-2xl border py-2.5 pr-3 pl-2.5"
+      className="relative flex flex-shrink-0 items-center gap-2.5 rounded-2xl border py-2.5 pr-3 pl-2.5"
       style={{
         borderColor: isReady ? accent : "rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.03)",

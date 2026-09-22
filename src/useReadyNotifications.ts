@@ -54,13 +54,15 @@ export function useReadyNotifications(
   }, [drops, readState]);
 
   const requestPermission = useCallback(async () => {
-    if (typeof Notification === "undefined") return;
+    if (typeof Notification === "undefined") return "unsupported" as const;
     try {
       await Notification.requestPermission();
     } catch {
-      return;
+      return readPermission();
     }
-    setPermission(readPermission());
+    const result = readPermission();
+    setPermission(result);
+    return result;
   }, []);
 
   return { permission, requestPermission };
