@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useState } from "react";
-import type { DropStore } from "./dropStore";
+import type { DropStore } from "../store/dropStore";
 
 export function useReadyDropTitle(store: DropStore, storageKeys: string[], now: () => number) {
   const [, tick] = useReducer((t: number) => t + 1, 0);

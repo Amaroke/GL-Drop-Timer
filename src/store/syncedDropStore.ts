@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
-import type { AuthService } from "./auth";
+import type { AuthService } from "../auth/auth";
 import {
   createFirestoreDropStore,
   type SyncStatus,

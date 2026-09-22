@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { AccountControl } from "./AccountControl";
-import type { AuthService } from "./auth";
-import type { DropStore } from "./dropStore";
-import { DROPS } from "./drops";
 import { Modal } from "./Modal";
 import { NotificationsControl } from "./NotificationsControl";
 import { PlannerPlaceholder } from "./PlannerPlaceholder";
 import { TimerCard } from "./TimerCard";
 import { TimerChip, TimerChipSkeleton } from "./TimerChip";
-import { useAuth } from "./useAuth";
-import { useDropsTimers, type DropTimerState } from "./useDropsTimers";
-import { useReadyDropTitle } from "./useReadyDropTitle";
-import { useReadyNotifications } from "./useReadyNotifications";
+import type { AuthService } from "../auth/auth";
+import { useAuth } from "../auth/useAuth";
+import { DROPS } from "../drops";
+import { useDropsTimers, type DropTimerState } from "../hooks/useDropsTimers";
+import { useReadyDropTitle } from "../hooks/useReadyDropTitle";
+import { useReadyNotifications } from "../hooks/useReadyNotifications";
+import type { DropStore } from "../store/dropStore";
 
 type AppProps = {
   store: DropStore;

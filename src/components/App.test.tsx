@@ -3,9 +3,18 @@ import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { createAuthStore, createMemoryAuthService, type AuthService, type AuthState } from "./auth";
-import { createLocalStorageDropStore, createMemoryDropStore, OLDEST_UPDATED_AT } from "./dropStore";
-import type { SyncStatus } from "./firestoreDropStore";
+import {
+  createAuthStore,
+  createMemoryAuthService,
+  type AuthService,
+  type AuthState,
+} from "../auth/auth";
+import {
+  createLocalStorageDropStore,
+  createMemoryDropStore,
+  OLDEST_UPDATED_AT,
+} from "../store/dropStore";
+import type { SyncStatus } from "../store/firestoreDropStore";
 
 const NOW = new Date("2026-01-01T12:00:00").getTime();
 const SIGNED_OUT_AUTH = createMemoryAuthService();

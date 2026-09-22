@@ -1,9 +1,9 @@
-import type { AuthService } from "./auth";
-import type { DropStore } from "./dropStore";
-import type { SyncStatus } from "./firestoreDropStore";
-import { PILL_BASE_CLASSES } from "./pillStyles";
-import { useAuth } from "./useAuth";
-import { useSyncStatus } from "./useSyncStatus";
+import type { AuthService } from "../auth/auth";
+import { useAuth } from "../auth/useAuth";
+import { PILL_BASE_CLASSES } from "../config/pillStyles";
+import { useSyncStatus } from "../hooks/useSyncStatus";
+import type { DropStore } from "../store/dropStore";
+import type { SyncStatus } from "../store/firestoreDropStore";
 
 type AccountControlProps = {
   auth: AuthService;

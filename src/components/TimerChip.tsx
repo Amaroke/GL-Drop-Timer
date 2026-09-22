@@ -1,6 +1,6 @@
-import { formatDuration } from "./useCountdown";
-import type { DropTimerState } from "./useDropsTimers";
 import { GearIcon } from "./GearIcon";
+import type { DropTimerState } from "../hooks/useDropsTimers";
+import { formatDuration } from "../lib/dateFormat";
 
 export function TimerChipSkeleton() {
   return (

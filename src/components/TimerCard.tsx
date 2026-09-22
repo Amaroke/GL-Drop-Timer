@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { formatDuration, formatReadyDate, toDatetimeLocalValue } from "./useCountdown";
-import type { DropTimerState } from "./useDropsTimers";
 import { GearIcon } from "./GearIcon";
+import type { DropTimerState } from "../hooks/useDropsTimers";
+import { formatDuration, formatReadyDate, toDatetimeLocalValue } from "../lib/dateFormat";
 
 type TimerCardProps = DropTimerState & {
   name: string;

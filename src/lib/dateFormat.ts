@@ -1,18 +1,3 @@
-import { useEffect, useState } from "react";
-
-export function useCountdown(readyAt: number | null, now: () => number) {
-  const [, forceTick] = useState(0);
-
-  useEffect(() => {
-    if (readyAt === null) return;
-    const id = setInterval(() => forceTick((t) => t + 1), 1000);
-    return () => clearInterval(id);
-  }, [readyAt]);
-
-  if (readyAt === null) return null;
-  return Math.max(0, readyAt - now());
-}
-
 export function formatDuration(ms: number) {
   const totalSeconds = Math.ceil(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAuthStore, type AuthService } from "./auth";
+import { createAuthStore, type AuthService } from "../auth/auth";
 import { createMemoryDropStore, type DropStore } from "./dropStore";
 import type { SyncStatus, SyncStatusStore } from "./firestoreDropStore";
 import { createSyncedDropStore } from "./syncedDropStore";

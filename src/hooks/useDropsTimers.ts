@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { DropStore } from "./dropStore";
+import type { DropStore } from "../store/dropStore";
 
 type DropDefinition = {
   storageKey: string;

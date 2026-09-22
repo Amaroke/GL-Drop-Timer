@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
-import type { DropStore } from "./dropStore";
-import type { SyncStatus } from "./firestoreDropStore";
+import type { DropStore } from "../store/dropStore";
+import type { SyncStatus } from "../store/firestoreDropStore";
 
 type WithSyncStatus = DropStore & {
   getSyncStatus?: () => SyncStatus | null;

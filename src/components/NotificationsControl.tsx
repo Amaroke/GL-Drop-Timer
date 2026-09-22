@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Modal } from "./Modal";
-import { PILL_BASE_CLASSES } from "./pillStyles";
-import type { NotificationPermissionState } from "./useReadyNotifications";
+import { PILL_BASE_CLASSES } from "../config/pillStyles";
+import type { NotificationPermissionState } from "../hooks/useReadyNotifications";
 
 type NotificationsControlProps = {
   permission: NotificationPermissionState;
