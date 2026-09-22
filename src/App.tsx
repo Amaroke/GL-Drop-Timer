@@ -7,8 +7,9 @@ import { Modal } from "./Modal";
 import { NotificationsControl } from "./NotificationsControl";
 import { PlannerPlaceholder } from "./PlannerPlaceholder";
 import { TimerCard } from "./TimerCard";
-import { TimerChip } from "./TimerChip";
-import { useDropsTimers } from "./useDropsTimers";
+import { TimerChip, TimerChipSkeleton } from "./TimerChip";
+import { useAuth } from "./useAuth";
+import { useDropsTimers, type DropTimerState } from "./useDropsTimers";
 import { useReadyDropTitle } from "./useReadyDropTitle";
 import { useReadyNotifications } from "./useReadyNotifications";
 
@@ -19,6 +20,38 @@ type AppProps = {
 };
 
 const STORAGE_KEYS = DROPS.map((drop) => drop.storageKey);
+
+function TimerChipsRow({
+  auth,
+  timers,
+  onOpenAdvanced,
+}: {
+  auth: AuthService;
+  timers: Record<string, DropTimerState>;
+  onOpenAdvanced: (storageKey: string) => void;
+}) {
+  const authState = useAuth(auth);
+  const isRestoring = authState.status === "restoring";
+
+  return (
+    <div
+      role={isRestoring ? "status" : undefined}
+      aria-label={isRestoring ? "Loading your timers" : undefined}
+      className="flex flex-col gap-3 sm:flex-1 sm:flex-row sm:flex-nowrap sm:justify-center sm:gap-4"
+    >
+      {isRestoring
+        ? DROPS.map((drop) => <TimerChipSkeleton key={drop.storageKey} />)
+        : DROPS.map((drop) => (
+            <TimerChip
+              key={drop.storageKey}
+              {...drop}
+              {...timers[drop.storageKey]}
+              onOpenAdvanced={() => onOpenAdvanced(drop.storageKey)}
+            />
+          ))}
+    </div>
+  );
+}
 
 function App({ store, auth, now }: AppProps) {
   useReadyDropTitle(store, STORAGE_KEYS, now);
@@ -35,19 +68,10 @@ function App({ store, auth, now }: AppProps) {
             <NotificationsControl permission={permission} requestPermission={requestPermission} />
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-1 sm:flex-row sm:flex-nowrap sm:justify-center sm:gap-4">
-            {DROPS.map((drop) => (
-              <TimerChip
-                key={drop.storageKey}
-                {...drop}
-                {...timers[drop.storageKey]}
-                onOpenAdvanced={() => setAdvancedDropKey(drop.storageKey)}
-              />
-            ))}
-          </div>
+          <TimerChipsRow auth={auth} timers={timers} onOpenAdvanced={setAdvancedDropKey} />
 
           <div className="sm:flex-shrink-0">
-            <AccountControl auth={auth} />
+            <AccountControl auth={auth} store={store} />
           </div>
         </div>
 
