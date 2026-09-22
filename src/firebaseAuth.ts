@@ -22,7 +22,7 @@ function toAuthUser(user: User): AuthUser {
 
 function createLiveAuthService(auth: Auth): AuthService {
   const provider = new GoogleAuthProvider();
-  const store = createAuthStore({ status: "signed-out" });
+  const store = createAuthStore({ status: "restoring" });
 
   onAuthStateChanged(auth, (user) => {
     store.setState(

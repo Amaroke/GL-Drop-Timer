@@ -5,6 +5,7 @@ export type AuthUser = {
 };
 
 export type AuthState =
+  | { status: "restoring" }
   | { status: "signed-out" }
   | { status: "signing-in" }
   | { status: "signed-in"; user: AuthUser };

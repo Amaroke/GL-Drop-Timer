@@ -1,21 +1,56 @@
 import type { AuthService } from "./auth";
+import type { DropStore } from "./dropStore";
+import type { SyncStatus } from "./firestoreDropStore";
 import { PILL_BASE_CLASSES } from "./pillStyles";
 import { useAuth } from "./useAuth";
+import { useSyncStatus } from "./useSyncStatus";
 
 type AccountControlProps = {
   auth: AuthService;
+  store: DropStore;
 };
 
 const PILL_CLASSES = `${PILL_BASE_CLASSES} text-white transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50`;
 
-export function AccountControl({ auth }: AccountControlProps) {
+const SYNC_STATUS_PRESENTATION: Record<
+  Exclude<SyncStatus, "synced">,
+  { label: string; dotClass: string }
+> = {
+  syncing: { label: "Syncing…", dotClass: "bg-sky-400 animate-pulse" },
+  offline: {
+    label: "Offline — changes will sync once you're back online",
+    dotClass: "bg-white/40",
+  },
+  error: { label: "Sync failed", dotClass: "bg-red-400" },
+};
+
+function SyncStatusDot({ status }: { status: SyncStatus }) {
+  if (status === "synced") return null;
+  const { label, dotClass } = SYNC_STATUS_PRESENTATION[status];
+  return (
+    <span
+      role="status"
+      title={label}
+      aria-label={label}
+      className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${dotClass}`}
+    />
+  );
+}
+
+export function AccountControl({ auth, store }: AccountControlProps) {
   const state = useAuth(auth);
+  const syncStatus = useSyncStatus(store);
+
+  if (state.status === "restoring") return null;
 
   if (state.status === "signed-in") {
     const label = state.user.displayName || state.user.email || "your account";
     return (
       <div className="flex min-w-0 items-center overflow-hidden rounded-full border border-white/10 bg-white/6 text-xs font-medium text-white">
-        <span className="max-w-32 truncate py-2 pr-2 pl-3.5">{label}</span>
+        <span className="flex min-w-0 items-center gap-1.5 py-2 pr-2 pl-3.5">
+          <span className="max-w-32 truncate">{label}</span>
+          {syncStatus && <SyncStatusDot status={syncStatus} />}
+        </span>
         <span className="w-px flex-shrink-0 self-stretch bg-white/15" aria-hidden="true" />
         <button
           type="button"

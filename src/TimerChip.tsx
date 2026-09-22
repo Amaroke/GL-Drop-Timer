@@ -2,6 +2,23 @@ import { formatDuration } from "./useCountdown";
 import type { DropTimerState } from "./useDropsTimers";
 import { GearIcon } from "./GearIcon";
 
+export function TimerChipSkeleton() {
+  return (
+    <div
+      aria-hidden="true"
+      className="flex flex-shrink-0 animate-pulse items-center gap-2.5 rounded-2xl border border-white/8 py-2.5 pr-3 pl-2.5"
+      style={{ background: "rgba(255,255,255,0.03)" }}
+    >
+      <div className="h-9 w-9 flex-shrink-0 rounded-full bg-white/10" />
+      <div className="flex min-w-[68px] flex-col gap-1.5">
+        <span className="h-3 w-16 rounded bg-white/10" />
+        <span className="h-3.5 w-12 rounded bg-white/10" />
+      </div>
+      <div className="h-8 w-8 flex-shrink-0 rounded-full bg-white/10" />
+    </div>
+  );
+}
+
 type TimerChipProps = DropTimerState & {
   name: string;
   image: string;

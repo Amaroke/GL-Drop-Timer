@@ -3,11 +3,42 @@ import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { createMemoryAuthService } from "./auth";
+import { createAuthStore, createMemoryAuthService, type AuthService, type AuthState } from "./auth";
 import { createLocalStorageDropStore, createMemoryDropStore, OLDEST_UPDATED_AT } from "./dropStore";
+import type { SyncStatus } from "./firestoreDropStore";
 
 const NOW = new Date("2026-01-01T12:00:00").getTime();
 const SIGNED_OUT_AUTH = createMemoryAuthService();
+
+function authServiceFrom(
+  initial: AuthState,
+): AuthService & { setState: (state: AuthState) => void } {
+  const store = createAuthStore(initial);
+  return {
+    getState: store.getState,
+    subscribe: store.subscribe,
+    signIn: async () => {},
+    signOut: async () => {},
+    setState: store.setState,
+  };
+}
+
+function fakeSyncedStore(initialStatus: SyncStatus = "synced") {
+  const base = createMemoryDropStore();
+  let status = initialStatus;
+  const listeners = new Set<() => void>();
+  return Object.assign(base, {
+    getSyncStatus: () => status,
+    subscribeSyncStatus(onChange: () => void) {
+      listeners.add(onChange);
+      return () => listeners.delete(onChange);
+    },
+    setSyncStatus(next: SyncStatus) {
+      status = next;
+      listeners.forEach((onChange) => onChange());
+    },
+  });
+}
 
 function chip(name: string) {
   return within(screen.getByRole("group", { name: `${name} timer` }));
@@ -837,6 +868,107 @@ describe("App", () => {
 
       expect(chip("Star Battery").getByText("11:00:00")).toBeInTheDocument();
       expect(store.get("gl-timer-star-battery")?.readyAt).toBe(NOW + 11 * 3600 * 1000);
+    });
+  });
+
+  describe("auth restoring", () => {
+    it("shows a loading state instead of a flash of empty timers while auth is restoring", () => {
+      const auth = authServiceFrom({ status: "restoring" });
+      const store = createMemoryDropStore({ "gl-timer-star-battery": NOW + 5000 });
+      render(<App store={store} auth={auth} now={() => NOW} />);
+
+      expect(screen.queryByRole("group", { name: "Star Battery timer" })).toBeNull();
+      expect(screen.getByRole("status", { name: "Loading your timers" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Sign in with Google" })).toBeNull();
+    });
+
+    it("shows the real timers once restoring resolves to signed-out", () => {
+      const auth = authServiceFrom({ status: "restoring" });
+      const store = createMemoryDropStore({ "gl-timer-star-battery": NOW + 5000 });
+      render(<App store={store} auth={auth} now={() => NOW} />);
+
+      act(() => auth.setState({ status: "signed-out" }));
+
+      expect(screen.getByRole("group", { name: "Star Battery timer" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeInTheDocument();
+      expect(screen.queryByRole("status", { name: "Loading your timers" })).toBeNull();
+    });
+
+    it("shows the returning player's data as soon as restoring resolves to signed-in", () => {
+      const auth = authServiceFrom({ status: "restoring" });
+      const store = createMemoryDropStore({ "gl-timer-star-battery": NOW + 5000 });
+      render(<App store={store} auth={auth} now={() => NOW} />);
+
+      act(() =>
+        auth.setState({
+          status: "signed-in",
+          user: { uid: "1", displayName: "Ada Lovelace", email: null },
+        }),
+      );
+
+      expect(chip("Star Battery").getByText("00:00:05")).toBeInTheDocument();
+      expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+    });
+  });
+
+  describe("sync status indicator", () => {
+    it("shows no sync status indicator while signed out", () => {
+      const store = fakeSyncedStore("syncing");
+      render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      expect(screen.queryByRole("status", { name: /Sync|Offline/ })).toBeNull();
+    });
+
+    it("shows nothing extra once signed in while fully synced", async () => {
+      const store = fakeSyncedStore("synced");
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
+      );
+      render(<App store={store} auth={auth} now={() => NOW} />);
+
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      expect(screen.queryByRole("status", { name: /Sync|Offline/ })).toBeNull();
+    });
+
+    it("indicates when a sync is in progress", async () => {
+      const store = fakeSyncedStore("syncing");
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
+      );
+      render(<App store={store} auth={auth} now={() => NOW} />);
+
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      expect(screen.getByRole("status", { name: "Syncing…" })).toBeInTheDocument();
+    });
+
+    it("indicates when the browser is offline", async () => {
+      const store = fakeSyncedStore("offline");
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
+      );
+      render(<App store={store} auth={auth} now={() => NOW} />);
+
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      expect(
+        screen.getByRole("status", { name: "Offline — changes will sync once you're back online" }),
+      ).toBeInTheDocument();
+    });
+
+    it("indicates when a sync has failed", async () => {
+      const store = fakeSyncedStore("synced");
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
+      );
+      render(<App store={store} auth={auth} now={() => NOW} />);
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+      expect(screen.queryByRole("status", { name: "Sync failed" })).toBeNull();
+
+      act(() => store.setSyncStatus("error"));
+
+      expect(screen.getByRole("status", { name: "Sync failed" })).toBeInTheDocument();
     });
   });
 

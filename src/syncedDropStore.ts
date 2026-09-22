@@ -1,22 +1,38 @@
 import { doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
 import type { AuthService } from "./auth";
-import { createFirestoreDropStore } from "./firestoreDropStore";
+import {
+  createFirestoreDropStore,
+  type SyncStatus,
+  type SyncStatusStore,
+} from "./firestoreDropStore";
 import { isDropEntry, type DropStore } from "./dropStore";
+import { createNotifier } from "./pubSub";
 
 type KeySubscription = {
   onChange: () => void;
   unsubscribe: () => void;
 };
 
+export type SyncedDropStore = DropStore & {
+  getSyncStatus(): SyncStatus | null;
+  subscribeSyncStatus(onChange: () => void): () => void;
+};
+
+function syncStatusOf(store: DropStore): SyncStatusStore | null {
+  return (store as DropStore & { syncStatus?: SyncStatusStore }).syncStatus ?? null;
+}
+
 export function createSyncedDropStore(deps: {
   auth: AuthService;
   localStore: DropStore;
   createRemoteStore: (uid: string) => DropStore;
   mergeLocalIntoRemote: (uid: string) => Promise<void>;
-}): DropStore {
+}): SyncedDropStore {
   const subscriptions = new Map<string, Set<KeySubscription>>();
   const remoteStores = new Map<string, DropStore>();
+  const syncStatusNotifier = createNotifier();
   let backing: DropStore = deps.localStore;
+  let unwatchSyncStatus: (() => void) | null = null;
   let generation = 0;
   let mergingGeneration: number | null = null;
   let wroteDuringMerge = false;
@@ -30,8 +46,15 @@ export function createSyncedDropStore(deps: {
     return store;
   }
 
+  function watchSyncStatus(next: DropStore) {
+    unwatchSyncStatus?.();
+    const status = syncStatusOf(next);
+    unwatchSyncStatus = status ? status.subscribe(syncStatusNotifier.notify) : null;
+  }
+
   function switchBacking(next: DropStore) {
     backing = next;
+    watchSyncStatus(next);
     subscriptions.forEach((subs, key) => {
       subs.forEach((sub) => {
         sub.unsubscribe();
@@ -39,6 +62,7 @@ export function createSyncedDropStore(deps: {
         sub.onChange();
       });
     });
+    syncStatusNotifier.notify();
   }
 
   async function activateForUid(uid: string, myGeneration: number) {
@@ -65,7 +89,7 @@ export function createSyncedDropStore(deps: {
     const state = deps.auth.getState();
     if (state.status === "signed-in") {
       void activateForUid(state.user.uid, generation);
-    } else {
+    } else if (state.status !== "restoring") {
       switchBacking(deps.localStore);
     }
   }
@@ -89,6 +113,8 @@ export function createSyncedDropStore(deps: {
         set.delete(sub);
       };
     },
+    getSyncStatus: () => syncStatusOf(backing)?.getStatus() ?? null,
+    subscribeSyncStatus: syncStatusNotifier.subscribe,
   };
 }
 
@@ -117,7 +143,7 @@ export function createFirestoreSyncedDropStore(options: {
   localStore: DropStore;
   db: Firestore;
   keys: readonly string[];
-}): DropStore {
+}): SyncedDropStore {
   return createSyncedDropStore({
     auth: options.auth,
     localStore: options.localStore,
