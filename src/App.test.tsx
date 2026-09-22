@@ -9,38 +9,113 @@ import { createLocalStorageDropStore, createMemoryDropStore, OLDEST_UPDATED_AT }
 const NOW = new Date("2026-01-01T12:00:00").getTime();
 const SIGNED_OUT_AUTH = createMemoryAuthService();
 
+function chip(name: string) {
+  return within(screen.getByRole("group", { name: `${name} timer` }));
+}
+
 function card(name: string) {
   return within(screen.getByRole("group", { name }));
 }
 
+async function openAdvanced(name: string) {
+  await userEvent.click(screen.getByRole("button", { name: `Advanced settings for ${name}` }));
+}
+
 describe("App", () => {
+  describe("layout", () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        "Notification",
+        Object.assign(function () {}, { permission: "default", requestPermission: vi.fn() }),
+      );
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("does not show an app title", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      expect(screen.queryByText("GL Drop Timer")).toBeNull();
+      expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    });
+
+    it("hides the notifications button below the sm breakpoint, keeping timers and account reachable", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      const notifications = screen.getByRole("button", { name: "Enable notifications" });
+      expect(notifications.closest(".hidden")).toHaveClass("hidden", "sm:block");
+      expect(screen.getByRole("button", { name: "Start Star Battery timer" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeInTheDocument();
+    });
+
+    it("keeps the Drop timers and the Planner inside the main landmark", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      const main = screen.getByRole("main");
+      expect(within(main).getByText("Star Battery")).toBeInTheDocument();
+      expect(within(main).getByText("Planner")).toBeInTheDocument();
+    });
+  });
+
+  describe("Planner placeholder", () => {
+    it("shows 12 tabs for the main planet and every Colony slot, the main planet active by default", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs).toHaveLength(12);
+      expect(tabs[0]).toHaveAccessibleName("Planet");
+      expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    });
+
+    it("switches the active tab when the player clicks another one", async () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await userEvent.click(screen.getByRole("tab", { name: "Colony 1" }));
+
+      expect(screen.getByRole("tab", { name: "Colony 1" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+      expect(screen.getByRole("tab", { name: "Planet" })).toHaveAttribute("aria-selected", "false");
+    });
+
+    it("shows a preview table of Buildings under the active tab", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      const panel = screen.getByRole("tabpanel");
+      expect(within(panel).getByRole("table")).toBeInTheDocument();
+      expect(screen.getByText(/preview/i)).toBeInTheDocument();
+    });
+  });
+
   it("shows a Drop with no saved Ready date as not started", () => {
     render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
-    const starBattery = card("Star Battery");
+    const starBattery = chip("Star Battery");
     expect(starBattery.getByText("--:--:--")).toBeInTheDocument();
-    expect(starBattery.getByRole("button", { name: "Start timer" })).toBeEnabled();
+    expect(starBattery.getByRole("button", { name: "Start Star Battery timer" })).toBeEnabled();
   });
 
-  it("starts the Cooldown immediately when the player presses Collect", async () => {
+  it("starts the Cooldown immediately when the player presses the relaunch button", async () => {
     render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
-    await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+    await userEvent.click(
+      chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+    );
 
-    expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
-    expect(card("Tool Case").getByText("--:--:--")).toBeInTheDocument();
+    expect(chip("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+    expect(chip("Tool Case").getByText("--:--:--")).toBeInTheDocument();
   });
 
   it("keeps a running Cooldown after a reload", async () => {
     const store = createMemoryDropStore();
     const { unmount } = render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
-    await userEvent.click(card("Tool Case").getByRole("button", { name: "Start timer" }));
+    await userEvent.click(chip("Tool Case").getByRole("button", { name: "Start Tool Case timer" }));
     unmount();
 
     const twoHoursLater = NOW + 2 * 3600 * 1000;
     render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => twoHoursLater} />);
 
-    expect(card("Tool Case").getByText("21:00:00")).toBeInTheDocument();
+    expect(chip("Tool Case").getByText("21:00:00")).toBeInTheDocument();
   });
 
   describe("with a corrupted stored Ready date", () => {
@@ -56,15 +131,16 @@ describe("App", () => {
           <App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />,
         );
 
-        const starBattery = card("Star Battery");
+        const starBattery = chip("Star Battery");
         expect(starBattery.getByText("--:--:--")).toBeInTheDocument();
-        expect(starBattery.getByRole("button", { name: "Start timer" })).toBeEnabled();
+        expect(starBattery.getByRole("button", { name: "Start Star Battery timer" })).toBeEnabled();
       },
     );
   });
 
-  describe("manual Ready date editor", () => {
+  describe("advanced settings, manual Ready date editor", () => {
     async function openEditor(name: string) {
+      await openAdvanced(name);
       await userEvent.click(
         card(name).getByRole("button", { name: `Set ${name} Ready date manually` }),
       );
@@ -86,7 +162,9 @@ describe("App", () => {
 
     it("rejects an invalid date, shows an error and keeps the previous Ready date", async () => {
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
-      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
 
       const input = await openEditor("Star Battery");
       await userEvent.clear(input);
@@ -101,9 +179,10 @@ describe("App", () => {
     });
   });
 
-  describe("reset confirmation", () => {
+  describe("advanced settings, reset confirmation", () => {
     async function startAndPressReset(name: string) {
-      await userEvent.click(card(name).getByRole("button", { name: "Start timer" }));
+      await userEvent.click(chip(name).getByRole("button", { name: `Start ${name} timer` }));
+      await openAdvanced(name);
       await userEvent.click(card(name).getByRole("button", { name: `Reset ${name} timer` }));
     }
 
@@ -146,14 +225,15 @@ describe("App", () => {
       expect(store.get("gl-timer-star-battery")?.readyAt).toBe(NOW + 11 * 3600 * 1000);
     });
 
-    it("only asks for the Drop whose reset was pressed", async () => {
+    it("only affects the Drop whose reset was pressed", async () => {
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
-      await userEvent.click(card("Tool Case").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        chip("Tool Case").getByRole("button", { name: "Start Tool Case timer" }),
+      );
 
       await startAndPressReset("Star Battery");
 
-      expect(card("Tool Case").queryByRole("button", { name: "Reset" })).toBeNull();
-      expect(card("Tool Case").getByText("23:00:00")).toBeInTheDocument();
+      expect(chip("Tool Case").getByText("23:00:00")).toBeInTheDocument();
     });
   });
 
@@ -162,7 +242,9 @@ describe("App", () => {
       const store = createMemoryDropStore();
       render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
-      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
 
       expect(store.get("gl-timer-star-battery")?.updatedAt).toBe(NOW);
     });
@@ -171,6 +253,7 @@ describe("App", () => {
       const store = createMemoryDropStore();
       render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
+      await openAdvanced("Star Battery");
       await userEvent.click(
         card("Star Battery").getByRole("button", { name: "Set Star Battery Ready date manually" }),
       );
@@ -185,7 +268,10 @@ describe("App", () => {
     it("records the current time as updated-at when a Drop is reset", async () => {
       const store = createMemoryDropStore();
       render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
-      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
+      await openAdvanced("Star Battery");
       await userEvent.click(
         card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
       );
@@ -205,7 +291,7 @@ describe("App", () => {
 
         render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
-        expect(card("Star Battery").getByText("03:00:00")).toBeInTheDocument();
+        expect(chip("Star Battery").getByText("03:00:00")).toBeInTheDocument();
         expect(store.get("gl-timer-star-battery")).toEqual({
           readyAt: NOW + 3 * 3600 * 1000,
           updatedAt: OLDEST_UPDATED_AT,
@@ -238,7 +324,7 @@ describe("App", () => {
     it("updates when a Drop becomes Ready", () => {
       let time = NOW;
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
-      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      act(() => screen.getByRole("button", { name: "Start Star Battery timer" }).click());
       expect(document.title).toBe(DEFAULT_TITLE);
 
       time = NOW + 12 * 3600 * 1000;
@@ -262,6 +348,7 @@ describe("App", () => {
       render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       expect(document.title).toBe(`(1) ${DEFAULT_TITLE}`);
 
+      act(() => screen.getByRole("button", { name: "Advanced settings for Star Battery" }).click());
       act(() =>
         card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }).click(),
       );
@@ -305,12 +392,12 @@ describe("App", () => {
 
     it("shows a Ready date set in another tab without reload", () => {
       render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
-      expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("--:--:--")).toBeInTheDocument();
 
       otherTabWrites("gl-timer-star-battery", String(NOW + 3 * 3600 * 1000));
 
-      expect(card("Star Battery").getByText("03:00:00")).toBeInTheDocument();
-      expect(card("Tool Case").getByText("--:--:--")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("03:00:00")).toBeInTheDocument();
+      expect(chip("Tool Case").getByText("--:--:--")).toBeInTheDocument();
     });
 
     it("shows a Ready date changed in another tab", () => {
@@ -319,7 +406,7 @@ describe("App", () => {
 
       otherTabWrites("gl-timer-star-battery", String(NOW + 5 * 3600 * 1000));
 
-      expect(card("Star Battery").getByText("05:00:00")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("05:00:00")).toBeInTheDocument();
     });
 
     it("shows a Drop as not started when it is reset in another tab", () => {
@@ -328,8 +415,10 @@ describe("App", () => {
 
       otherTabWrites("gl-timer-star-battery", null);
 
-      expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
-      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
+      expect(chip("Star Battery").getByText("--:--:--")).toBeInTheDocument();
+      expect(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      ).toBeEnabled();
     });
 
     it("shows every Drop as not started when the storage is cleared in another tab", () => {
@@ -342,8 +431,8 @@ describe("App", () => {
         window.dispatchEvent(new StorageEvent("storage", { key: null, storageArea: localStorage }));
       });
 
-      expect(card("Star Battery").getByText("--:--:--")).toBeInTheDocument();
-      expect(card("Tool Case").getByText("--:--:--")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("--:--:--")).toBeInTheDocument();
+      expect(chip("Tool Case").getByText("--:--:--")).toBeInTheDocument();
     });
 
     it("ignores changes to unrelated keys and to session storage", () => {
@@ -363,12 +452,15 @@ describe("App", () => {
       });
       sessionStorage.clear();
 
-      expect(card("Star Battery").getByText("03:00:00")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("03:00:00")).toBeInTheDocument();
     });
 
     it("dismisses a pending reset confirmation when another tab already reset the Drop", async () => {
       render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
-      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
+      await openAdvanced("Star Battery");
       await userEvent.click(
         card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
       );
@@ -387,7 +479,10 @@ describe("App", () => {
 
     it("dismisses the confirmation so the newer Ready date is not wiped", async () => {
       render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
-      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
+      await openAdvanced("Star Battery");
       await userEvent.click(
         card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
       );
@@ -471,6 +566,24 @@ describe("App", () => {
       expect(screen.getByText("Notifications enabled")).toBeInTheDocument();
     });
 
+    it("shows a popup confirming notifications were enabled", async () => {
+      installFakeNotification("default");
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await enableNotifications();
+
+      expect(screen.getByRole("dialog", { name: "Notifications enabled" })).toBeInTheDocument();
+    });
+
+    it("shows a popup explaining notifications were blocked", async () => {
+      installFakeNotification("default", "denied");
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await enableNotifications();
+
+      expect(screen.getByRole("dialog", { name: "Notifications blocked" })).toBeInTheDocument();
+    });
+
     it("sends one notification per Drop when it goes from running to Ready", () => {
       const { sent } = installFakeNotification("granted");
       let time = NOW;
@@ -496,14 +609,14 @@ describe("App", () => {
       const { sent } = installFakeNotification("granted");
       let time = NOW;
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
-      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      act(() => screen.getByRole("button", { name: "Start Star Battery timer" }).click());
       tick();
 
       time = NOW + 12 * 3600 * 1000;
       tick();
       expect(sent).toHaveLength(1);
 
-      act(() => card("Star Battery").getByRole("button", { name: "Collected" }).click());
+      act(() => screen.getByRole("button", { name: "Collect Star Battery" }).click());
       tick();
       time += 12 * 3600 * 1000;
       tick();
@@ -526,6 +639,7 @@ describe("App", () => {
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
       tick();
 
+      act(() => screen.getByRole("button", { name: "Advanced settings for Star Battery" }).click());
       act(() =>
         card("Star Battery")
           .getByRole("button", { name: "Set Star Battery Ready date manually" })
@@ -549,9 +663,10 @@ describe("App", () => {
     it("sends nothing when a running timer is reset", () => {
       const { sent } = installFakeNotification("granted");
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
-      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      act(() => screen.getByRole("button", { name: "Start Star Battery timer" }).click());
       tick();
 
+      act(() => screen.getByRole("button", { name: "Advanced settings for Star Battery" }).click());
       act(() =>
         card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }).click(),
       );
@@ -595,13 +710,13 @@ describe("App", () => {
       let time = NOW;
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
 
-      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
-      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      act(() => screen.getByRole("button", { name: "Start Star Battery timer" }).click());
+      expect(chip("Star Battery").getByText("11:00:00")).toBeInTheDocument();
       tick();
       time = NOW + 12 * 3600 * 1000;
       tick();
 
-      expect(card("Star Battery").getByText("Ready!")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("Ready!")).toBeInTheDocument();
       expect(sent).toHaveLength(0);
       expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
       expect(screen.getByText("Notifications blocked")).toBeInTheDocument();
@@ -613,7 +728,7 @@ describe("App", () => {
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
       await enableNotifications();
 
-      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
+      act(() => screen.getByRole("button", { name: "Start Star Battery timer" }).click());
       time = NOW + 12 * 3600 * 1000;
       tick();
 
@@ -626,7 +741,9 @@ describe("App", () => {
 
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
-      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
+      expect(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      ).toBeEnabled();
       expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
     });
   });
@@ -635,9 +752,11 @@ describe("App", () => {
     it("lets a visitor use a Drop timer without signing in", async () => {
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
-      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
 
-      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("11:00:00")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeEnabled();
     });
 
@@ -649,7 +768,7 @@ describe("App", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
-      expect(screen.getByText("Signed in as Ada Lovelace")).toBeInTheDocument();
+      expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Sign out" })).toBeEnabled();
       expect(screen.queryByRole("button", { name: "Sign in with Google" })).toBeNull();
     });
@@ -662,7 +781,7 @@ describe("App", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
-      expect(screen.getByText("Signed in as ada@example.com")).toBeInTheDocument();
+      expect(screen.getByText("ada@example.com")).toBeInTheDocument();
     });
 
     it("returns to signed out when the player signs out", async () => {
@@ -675,7 +794,20 @@ describe("App", () => {
       await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
 
       expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeEnabled();
-      expect(screen.queryByText(/Signed in as/)).toBeNull();
+      expect(screen.queryByText("Ada Lovelace")).toBeNull();
+    });
+
+    it("does not sign out when the player clicks the account name", async () => {
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: "ada@example.com" }),
+      );
+      render(<App store={createMemoryDropStore()} auth={auth} now={() => NOW} />);
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+
+      await userEvent.click(screen.getByText("Ada Lovelace"));
+
+      expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Sign out" })).toBeEnabled();
     });
 
     it("quietly returns to signed out when the sign-in popup is cancelled", async () => {
@@ -686,7 +818,9 @@ describe("App", () => {
 
       expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeEnabled();
       expect(screen.queryByRole("alert")).toBeNull();
-      expect(card("Star Battery").getByRole("button", { name: "Start timer" })).toBeEnabled();
+      expect(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      ).toBeEnabled();
     });
 
     it("keeps Ready dates in the local store while signed in", async () => {
@@ -697,9 +831,11 @@ describe("App", () => {
       render(<App store={store} auth={auth} now={() => NOW} />);
       await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
-      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
 
-      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("11:00:00")).toBeInTheDocument();
       expect(store.get("gl-timer-star-battery")?.readyAt).toBe(NOW + 11 * 3600 * 1000);
     });
   });
@@ -711,15 +847,120 @@ describe("App", () => {
     it("shows Ready after the clock jumps past the Ready date", () => {
       let time = NOW;
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => time} />);
-      act(() => card("Star Battery").getByRole("button", { name: "Start timer" }).click());
-      expect(card("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+      act(() => screen.getByRole("button", { name: "Start Star Battery timer" }).click());
+      expect(chip("Star Battery").getByText("11:00:00")).toBeInTheDocument();
 
       time = NOW + 12 * 3600 * 1000;
       act(() => {
         vi.advanceTimersByTime(1000);
       });
 
-      expect(card("Star Battery").getByText("Ready!")).toBeInTheDocument();
+      expect(chip("Star Battery").getByText("Ready!")).toBeInTheDocument();
+    });
+  });
+
+  describe("advanced settings modal", () => {
+    it("opens the advanced card for a Drop and closes it with the close button", async () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await openAdvanced("Tool Case");
+      expect(
+        screen.getByRole("dialog", { name: "Advanced settings for Tool Case" }),
+      ).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: "Close" }));
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("closes when the player presses Escape", async () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await openAdvanced("Helmet");
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+      await userEvent.keyboard("{Escape}");
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("shows only one Drop's advanced card at a time", async () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await openAdvanced("Star Battery");
+      await openAdvanced("Helmet");
+
+      expect(screen.getAllByRole("dialog")).toHaveLength(1);
+      expect(
+        screen.getByRole("dialog", { name: "Advanced settings for Helmet" }),
+      ).toBeInTheDocument();
+    });
+
+    it("returns focus to the button that opened it once closed", async () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+      const trigger = screen.getByRole("button", { name: "Advanced settings for Tool Case" });
+
+      await userEvent.click(trigger);
+      await userEvent.keyboard("{Escape}");
+
+      expect(trigger).toHaveFocus();
+    });
+
+    it("keeps Tab focus inside the dialog", async () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await openAdvanced("Tool Case");
+      const dialog = screen.getByRole("dialog");
+      const buttons = within(dialog).getAllByRole("button");
+      expect(document.activeElement).toBe(buttons[0]);
+
+      await userEvent.tab({ shift: true });
+
+      expect(document.activeElement).toBe(buttons[buttons.length - 1]);
+    });
+  });
+
+  describe("the chip stays in sync with the advanced card", () => {
+    beforeEach(() => localStorage.clear());
+    afterEach(() => localStorage.clear());
+
+    it("updates the chip immediately when the Drop is relaunched from the advanced card", async () => {
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await openAdvanced("Star Battery");
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Start timer" }));
+
+      expect(chip("Star Battery").getByText("11:00:00")).toBeInTheDocument();
+    });
+
+    it("updates the chip immediately when a manual Ready date is saved in the advanced card", async () => {
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      await openAdvanced("Star Battery");
+      await userEvent.click(
+        card("Star Battery").getByRole("button", { name: "Set Star Battery Ready date manually" }),
+      );
+      const input = card("Star Battery").getByDisplayValue(/.*/) as HTMLInputElement;
+      await userEvent.clear(input);
+      await userEvent.type(input, "2026-01-01T18:30");
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Save" }));
+
+      expect(chip("Star Battery").getByText("06:30:00")).toBeInTheDocument();
+    });
+
+    it("updates the chip immediately when the Drop is reset from the advanced card", async () => {
+      render(<App store={createLocalStorageDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+      await userEvent.click(
+        chip("Star Battery").getByRole("button", { name: "Start Star Battery timer" }),
+      );
+
+      await openAdvanced("Star Battery");
+      await userEvent.click(
+        card("Star Battery").getByRole("button", { name: "Reset Star Battery timer" }),
+      );
+      await userEvent.click(card("Star Battery").getByRole("button", { name: "Reset" }));
+
+      expect(chip("Star Battery").getByText("--:--:--")).toBeInTheDocument();
     });
   });
 });

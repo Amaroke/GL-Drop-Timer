@@ -1,8 +1,14 @@
+import { useState } from "react";
 import { AccountControl } from "./AccountControl";
 import type { AuthService } from "./auth";
 import type { DropStore } from "./dropStore";
 import { DROPS } from "./drops";
+import { Modal } from "./Modal";
+import { NotificationsControl } from "./NotificationsControl";
+import { PlannerPlaceholder } from "./PlannerPlaceholder";
 import { TimerCard } from "./TimerCard";
+import { TimerChip } from "./TimerChip";
+import { useDropsTimers } from "./useDropsTimers";
 import { useReadyDropTitle } from "./useReadyDropTitle";
 import { useReadyNotifications } from "./useReadyNotifications";
 
@@ -17,35 +23,50 @@ const STORAGE_KEYS = DROPS.map((drop) => drop.storageKey);
 function App({ store, auth, now }: AppProps) {
   useReadyDropTitle(store, STORAGE_KEYS, now);
   const { permission, requestPermission } = useReadyNotifications(DROPS, store, now);
+  const timers = useDropsTimers(DROPS, store, now);
+  const [advancedDropKey, setAdvancedDropKey] = useState<string | null>(null);
+  const advancedDrop = DROPS.find((drop) => drop.storageKey === advancedDropKey) ?? null;
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-4xl flex-col items-center justify-center px-6 py-12">
-      <header className="mb-10 text-center">
-        <h1 className="text-3xl font-bold text-white sm:text-4xl">GL Drop Timer</h1>
-        <p className="mt-2 text-white/50">Track the cooldown of your free Galaxy Life items</p>
-        {permission === "default" && (
-          <button
-            type="button"
-            onClick={requestPermission}
-            className="mt-4 rounded-xl bg-white/8 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/15"
-          >
-            Enable notifications
-          </button>
-        )}
-        {permission === "granted" && (
-          <p className="mt-4 text-sm text-white/40">Notifications enabled</p>
-        )}
-        {permission === "denied" && (
-          <p className="mt-4 text-sm text-white/40">Notifications blocked</p>
-        )}
-        <AccountControl auth={auth} />
-      </header>
+    <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-6 py-8">
+      <main className="flex flex-1 flex-col">
+        <div className="mb-8 flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="hidden sm:block sm:flex-shrink-0">
+            <NotificationsControl permission={permission} requestPermission={requestPermission} />
+          </div>
 
-      <main className="grid w-full grid-cols-1 gap-6 sm:grid-cols-3">
-        {DROPS.map((drop) => (
-          <TimerCard key={drop.storageKey} {...drop} store={store} now={now} />
-        ))}
+          <div className="flex flex-col gap-3 sm:flex-1 sm:flex-row sm:flex-nowrap sm:justify-center sm:gap-4">
+            {DROPS.map((drop) => (
+              <TimerChip
+                key={drop.storageKey}
+                {...drop}
+                {...timers[drop.storageKey]}
+                onOpenAdvanced={() => setAdvancedDropKey(drop.storageKey)}
+              />
+            ))}
+          </div>
+
+          <div className="sm:flex-shrink-0">
+            <AccountControl auth={auth} />
+          </div>
+        </div>
+
+        <PlannerPlaceholder />
       </main>
+
+      {advancedDrop && (
+        <Modal
+          label={`Advanced settings for ${advancedDrop.name}`}
+          onClose={() => setAdvancedDropKey(null)}
+        >
+          <TimerCard
+            key={advancedDrop.storageKey}
+            {...advancedDrop}
+            {...timers[advancedDrop.storageKey]}
+            now={now}
+          />
+        </Modal>
+      )}
 
       <footer className="mt-12 text-center text-sm text-white/30">
         Timers are saved in your browser.

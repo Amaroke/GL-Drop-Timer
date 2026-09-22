@@ -39,3 +39,7 @@ _Avoid_: HQ, town hall
 **Building**:
 A structure placed on a Colony, with a type and a level. Decorations are not tracked.
 _Avoid_: Structure, tile
+
+**Planner**:
+The area of the app that tracks a Colony's Buildings against what the Star Base allows and recommends what to build or upgrade next.
+_Avoid_: Colonies tab, Colony tracker, progression view
