@@ -1,4 +1,10 @@
-import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
+import {
+  getApp,
+  getApps,
+  initializeApp,
+  type FirebaseApp,
+  type FirebaseOptions,
+} from "firebase/app";
 import {
   GoogleAuthProvider,
   type Auth,
@@ -56,11 +62,23 @@ function createUnavailableAuthService(): AuthService {
   };
 }
 
-export function createFirebaseAuthService(config: FirebaseOptions): AuthService {
+export function getFirebaseApp(config: FirebaseOptions): FirebaseApp | null {
   try {
-    const app = getApps().length ? getApp() : initializeApp(config);
+    return getApps().length ? getApp() : initializeApp(config);
+  } catch {
+    return null;
+  }
+}
+
+export function createFirebaseAuthServiceFromApp(app: FirebaseApp | null): AuthService {
+  if (!app) return createUnavailableAuthService();
+  try {
     return createLiveAuthService(getAuth(app));
   } catch {
     return createUnavailableAuthService();
   }
+}
+
+export function createFirebaseAuthService(config: FirebaseOptions): AuthService {
+  return createFirebaseAuthServiceFromApp(getFirebaseApp(config));
 }
