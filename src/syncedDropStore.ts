@@ -53,6 +53,7 @@ export function createSyncedDropStore(deps: {
   }
 
   function switchBacking(next: DropStore) {
+    if (next === backing) return;
     backing = next;
     watchSyncStatus(next);
     subscriptions.forEach((subs, key) => {
