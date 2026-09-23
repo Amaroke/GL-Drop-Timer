@@ -29,16 +29,35 @@ Authenticating with Google to identify the Player as themself.
 _Avoid_: Log in, authenticate
 
 **Colony**:
-A planet owned by the player, each with its own Star Base. The main planet is a Colony like any other.
+A planet owned by the player, each with its own Star Base. There are twelve fixed Colonies, the main planet and eleven others, which the Observatory unlocks one per level. The main planet is a Colony like any other.
 _Avoid_: Planet, base, world
 
 **Star Base**:
 The central building of a Colony, whose level caps the level and the count of every other Building on that Colony.
 _Avoid_: HQ, town hall
 
+**Building type**:
+A kind of structure defined in the catalog (for example Barracks), with its limits per Star Base level. Some Building types exist only on the main planet.
+_Avoid_: Class, model
+
 **Building**:
-A structure placed on a Colony, with a type and a level. Decorations are not tracked.
+One placed instance of a Building type on a Colony, with its own level. Decorations are not tracked.
 _Avoid_: Structure, tile
+
+**Observatory**:
+The Building type, only on the main planet, whose level sets how many other Colonies are unlocked.
+_Avoid_: Telescope
+
+**Missing**:
+Status of a Building type whose owned count is below its maximum count for the Star Base level.
+
+**Below limit**:
+Status of a Building whose level is below the maximum level the Star Base allows.
+_Avoid_: Outdated
+
+**Over limit**:
+Status of a Building or count that exceeds what the Star Base now allows, after the Star Base level was lowered. The data is kept, never deleted.
+_Avoid_: Invalid
 
 **Planner**:
 The area of the app that tracks a Colony's Buildings against what the Star Base allows and recommends what to build or upgrade next.
