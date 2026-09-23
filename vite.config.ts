@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
-  base: "/GL-Drop-Timer/",
+  base: "/GL-Upgrade-Planner/",
   plugins: [react(), tailwindcss()],
   test: {
     environment: "jsdom",

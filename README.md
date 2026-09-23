@@ -1,8 +1,8 @@
-# GL Drop Timer
+# GL Upgrade Planner
 
 Tracks the Cooldown of the three free Drops in Galaxy Life so a player knows when to Collect them again: Star Battery (11h), Tool Case (23h) and Helmet (35h).
 
-Live site: <https://amaroke.github.io/GL-Drop-Timer/>
+Live site: <https://amaroke.github.io/GL-Upgrade-Planner/>
 
 The domain vocabulary (Drop, Cooldown, Ready date, Collect) is defined in [CONTEXT.md](CONTEXT.md). Architecture decisions are recorded in [docs/adr/](docs/adr/).
 

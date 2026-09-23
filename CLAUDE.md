@@ -10,7 +10,7 @@ Once a commit is confirmed, pushed, and the review is done, create the PR to mai
 
 ### Issue tracker
 
-Issues are tracked in GitHub Issues (Amaroke/GL-Drop-Timer) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues are tracked in GitHub Issues (Amaroke/GL-Upgrade-Planner) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

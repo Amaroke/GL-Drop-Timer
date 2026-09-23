@@ -9,10 +9,10 @@
     <p class="kicker">Lesson 0001 · Firebase</p>
     <h1>Firebase, from the ground up</h1>
     <p class="callout">
-      What Firebase actually is, how GL-Drop-Timer uses it, and what every file in the repo does.
-      GL-Drop-Timer uses exactly two Firebase products: Authentication and Firestore. No Hosting, no
-      Storage, no Cloud Functions. See <a href="../../adr/0001-firebase-backend.md">ADR 0001</a> for
-      why.
+      What Firebase actually is, how GL-Upgrade-Planner uses it, and what every file in the repo
+      does. GL-Upgrade-Planner uses exactly two Firebase products: Authentication and Firestore. No
+      Hosting, no Storage, no Cloud Functions. See
+      <a href="../../adr/0001-firebase-backend.md">ADR 0001</a> for why.
     </p>
 
     <p class="screenshot-note">
@@ -45,7 +45,7 @@
       <a href="https://firebase.google.com/docs/guides">(Firebase docs — Fundamentals)</a>
     </p>
 
-    <p>GL-Drop-Timer uses two of those products:</p>
+    <p>GL-Upgrade-Planner uses two of those products:</p>
     <table>
       <tr>
         <th>Product</th>
@@ -69,7 +69,7 @@
         <title id="dia1-title">Architecture without a custom backend</title>
         <desc id="dia1-desc">
           The browser talks directly to Firebase Auth and Cloud Firestore, both managed by Google.
-          No server is hosted by GL-Drop-Timer.
+          No server is hosted by GL-Upgrade-Planner.
         </desc>
         <rect x="20" y="95" width="170" height="70" rx="8" fill="#f1efe7" stroke="#1a1a1a" />
         <text
@@ -90,7 +90,7 @@
           font-size="12"
           fill="#6b6558"
         >
-          GL-Drop-Timer
+          GL-Upgrade-Planner
         </text>
 
         <rect x="330" y="20" width="200" height="70" rx="8" fill="#eaf1fb" stroke="#1c4c8c" />
@@ -199,8 +199,8 @@
         </defs>
       </svg>
       <p class="diagram-caption">
-        Diagram — the browser talks straight to Google's servers. There is no GL-Drop-Timer server
-        in between.
+        Diagram — the browser talks straight to Google's servers. There is no GL-Upgrade-Planner
+        server in between.
       </p>
     </div>
 
@@ -219,14 +219,14 @@
     </p>
     <ul>
       <li>
-        <strong>Project</strong>: the top-level container. GL-Drop-Timer's project id is
-        <code>demo-gl-drop-timer</code> (see <code>.firebaserc</code>, below). A project holds all
-        the data, users, and settings.
+        <strong>Project</strong>: the top-level container. GL-Upgrade-Planner's project id is
+        <code>demo-gl-upgrade-planner</code> (see <code>.firebaserc</code>, below). A project holds
+        all the data, users, and settings.
       </li>
       <li>
         <strong>App</strong>: a registration inside a project, one per platform (web, iOS, Android).
-        GL-Drop-Timer registers one web app. Registering it is what generates the config object read
-        in <code>src/config/firebaseConfig.ts</code>.
+        GL-Upgrade-Planner registers one web app. Registering it is what generates the config object
+        read in <code>src/config/firebaseConfig.ts</code>.
       </li>
     </ul>
     <p class="source">
@@ -251,7 +251,7 @@
           font-weight="bold"
           fill="#1a1a1a"
         >
-          demo-gl-drop-timer
+          demo-gl-upgrade-planner
         </text>
         <line x1="10" y1="50" x2="450" y2="50" stroke="#d8d3c7" />
         <text x="30" y="75" font-family="Consolas, monospace" font-size="12" fill="#6b6558">
@@ -331,7 +331,7 @@
     <h2 id="auth">3. Firebase Authentication, in depth</h2>
     <p>
       Firebase Auth is a hosted identity service: it verifies who a user is and hands your app a
-      signed token, without you ever touching a password. GL-Drop-Timer wires up exactly one
+      signed token, without you ever touching a password. GL-Upgrade-Planner wires up exactly one
       provider, Google, through
       <a href="https://firebase.google.com/docs/auth/web/google-signin"
         ><code>signInWithPopup</code></a
@@ -385,9 +385,9 @@
       can show anything. <code>restoring</code> is that "don't know yet" window.
     </p>
     <p class="note">
-      The Google account itself never touches GL-Drop-Timer's code. The popup, the password check,
-      the 2FA if any, all of that happens on Google's own page. The app only ever receives the
-      result: a <code>uid</code>, a display name, an email.
+      The Google account itself never touches GL-Upgrade-Planner's code. The popup, the password
+      check, the 2FA if any, all of that happens on Google's own page. The app only ever receives
+      the result: a <code>uid</code>, a display name, an email.
     </p>
 
     <h2 id="firestore">4. Cloud Firestore, in depth</h2>
@@ -422,7 +422,7 @@
         <strong><code>persistentLocalCache</code></strong
         >: Firestore keeps a copy of the data in the browser's IndexedDB. Reads come from that cache
         instantly, writes apply to the cache immediately too (optimistic), then get pushed to the
-        server in the background. This is what lets GL-Drop-Timer work offline.
+        server in the background. This is what lets GL-Upgrade-Planner work offline.
         <a href="https://firebase.google.com/docs/firestore/manage-data/enable-offline"
           >(Access data offline)</a
         >
@@ -557,8 +557,9 @@ match /users/{userId}/drops/{dropId} {
     </p>
     <pre><code>firebase emulators:start</code></pre>
     <p>
-      GL-Drop-Timer configures it to listen on port 8080 (see <code>firebase.json</code> below),
-      which is also what <code>firestoreRules.emulator.test.ts</code> and the other
+      GL-Upgrade-Planner configures it to listen on port 8080 (see
+      <code>firebase.json</code> below), which is also what
+      <code>firestoreRules.emulator.test.ts</code> and the other
       <code>*.emulator.test.ts</code> files in <code>src/store/</code> connect to. That's how the
       test suite can assert "this write should be denied" without touching production data.
     </p>
@@ -601,7 +602,7 @@ match /users/{userId}/drops/{dropId} {
       <h3><span class="file-path">.firebaserc</span><span class="tag tag-config">CLI</span></h3>
       <pre><code>{
   "projects": {
-    "default": "demo-gl-drop-timer"
+    "default": "demo-gl-upgrade-planner"
   }
 }</code></pre>
       <p>

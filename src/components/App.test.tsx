@@ -74,7 +74,7 @@ describe("App", () => {
     it("does not show an app title", () => {
       render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
-      expect(screen.queryByText("GL Drop Timer")).toBeNull();
+      expect(screen.queryByText("GL Upgrade Planner")).toBeNull();
       expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
     });
 
@@ -341,7 +341,7 @@ describe("App", () => {
   });
 
   describe("tab title", () => {
-    const DEFAULT_TITLE = "GL Drop Timer";
+    const DEFAULT_TITLE = "GL Upgrade Planner";
 
     beforeEach(() => {
       document.title = DEFAULT_TITLE;

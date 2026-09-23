@@ -1,4 +1,4 @@
-# GL Drop Timer
+# GL Upgrade Planner
 
 Tracks the cooldowns of the free items in Galaxy Life so a player knows when to collect them again.
 

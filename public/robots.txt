@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://amaroke.github.io/GL-Drop-Timer/sitemap.xml
+Sitemap: https://amaroke.github.io/GL-Upgrade-Planner/sitemap.xml

@@ -20,7 +20,7 @@ let testEnv: RulesTestEnvironment;
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
-    projectId: "demo-gl-drop-timer-rules",
+    projectId: "demo-gl-upgrade-planner-rules",
     firestore: { rules: readFileSync("firestore.rules", "utf8") },
   });
 });
