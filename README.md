@@ -1,56 +1,31 @@
 # GL Upgrade Planner
 
-Tracks the Cooldown of the three free Drops in Galaxy Life so a player knows when to Collect them again: Star Battery (11h), Tool Case (23h) and Helmet (35h).
+A companion for Galaxy Life players. Keep track of what you have built on each of your Colonies, see what your Star Base still lets you build or upgrade, and never forget to collect your free Drops.
 
-Live site: <https://amaroke.github.io/GL-Upgrade-Planner/>
+Use it here: <https://amaroke.github.io/GL-Upgrade-Planner/>
 
-The domain vocabulary (Drop, Cooldown, Ready date, Collect) is defined in [CONTEXT.md](CONTEXT.md). Architecture decisions are recorded in [docs/adr/](docs/adr/).
+## Plan your Colonies
 
-## Features
+- Add up to 12 Colonies, your main planet included, and name them as you like
+- Set the Star Base level of each Colony and see every limit update at once
+- Record how many of each Building you own and the level of each one
+- See at a glance how many you own out of the maximum, and each level out of the maximum allowed
+- Spot what is still missing and what can be upgraded, or show only what is left to upgrade
+- Buildings are grouped by category so the list stays easy to read
+- Lower a Star Base level and nothing is lost: anything above the new limit is simply flagged
 
-- One timer per Drop, started with a single click when the Drop is Collected
-- Manual editing of a Ready date, with validation
-- Inline confirmation before a timer is reset
-- Ready dates saved in the browser and synchronized across open tabs
-- Number of Ready Drops shown in the tab title
-- Browser notification when a Drop becomes Ready while the tab is open
-- Optional Google sign-in to identify the player, with Ready dates still stored locally
+Building limits come from the Galaxy Life wiki.
 
-## Stack
+## Never miss a Drop
 
-React, TypeScript, Tailwind CSS and Vite. Tests use Vitest with Testing Library. Linting uses oxlint and formatting uses oxfmt.
+Star Battery (11h), Tool Case (23h) and Helmet (35h) each get their own timer, right next to the Planner.
 
-## Setup
+- Start a timer with one click when you collect the Drop
+- Correct a Ready date by hand if you need to
+- Get a confirmation before a timer is reset
+- See how many Drops are ready in the browser tab title
+- Get a browser notification when a Drop becomes ready while the page is open
 
-The Node version is pinned in `.nvmrc`.
+## Your data, everywhere
 
-```sh
-npm install
-npm run dev
-```
-
-Google sign-in needs a Firebase project with the Google provider enabled. Copy `.env.example` to `.env` and fill in the web app config from the Firebase console:
-
-```sh
-cp .env.example .env
-```
-
-Without these variables, every Drop timer still works; signing in fails quietly instead.
-
-## Scripts
-
-| Script                 | Purpose                             |
-| ---------------------- | ----------------------------------- |
-| `npm run dev`          | Start the Vite dev server           |
-| `npm run build`        | Type-check with `tsc -b` and build  |
-| `npm run preview`      | Serve the production build locally  |
-| `npm run lint`         | Lint with oxlint                    |
-| `npm run format`       | Format the code with oxfmt          |
-| `npm run format:check` | Check formatting without writing    |
-| `npm test`             | Run the test suite once with Vitest |
-
-## Continuous integration and deployment
-
-The CI workflow runs on every pull request. It installs dependencies with `npm ci`, then runs lint, format check, tests and build.
-
-The deploy workflow runs on every push to `main` and can also be started manually. It runs the CI workflow first, then builds the site and publishes it to GitHub Pages. The build step reads the Firebase web app config from repository secrets (`VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`); until they are set, the deployed site still works fully signed out.
+Everything is saved in your browser, no account needed. Sign in with Google to keep your Colonies and timers in sync across all your devices.
