@@ -59,6 +59,14 @@ _Avoid_: Outdated
 Status of a Building or count that exceeds what the Star Base now allows, after the Star Base level was lowered. The data is kept, never deleted.
 _Avoid_: Invalid
 
+**Maxed**:
+Status of a Building type with nothing left to build or upgrade at the current Star Base level.
+_Avoid_: Complete, done
+
+**Next step**:
+An action the Planner recommends on a Colony, either building one Missing Building or raising one Building Below limit by one level, shown with the time it takes.
+_Avoid_: Suggestion, todo, task
+
 **Planner**:
 The area of the app that tracks a Colony's Buildings against what the Star Base allows and recommends what to build or upgrade next.
 _Avoid_: Colonies tab, Colony tracker, progression view
