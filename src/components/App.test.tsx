@@ -14,7 +14,7 @@ import {
   createMemoryDropStore,
   OLDEST_UPDATED_AT,
 } from "../store/dropStore";
-import type { SyncStatus } from "../store/firestoreDropStore";
+import type { SyncStatus } from "../store/sendScheduler";
 
 const NOW = new Date("2026-01-01T12:00:00").getTime();
 const SIGNED_OUT_AUTH = createMemoryAuthService();
@@ -37,6 +37,8 @@ function fakeSyncedStore(initialStatus: SyncStatus = "synced") {
   let status = initialStatus;
   const listeners = new Set<() => void>();
   return Object.assign(base, {
+    saveNow: vi.fn(),
+    getNextSendAt: () => NOW + 5 * 60 * 1000,
     getSyncStatus: () => status,
     subscribeSyncStatus(onChange: () => void) {
       listeners.add(onChange);
@@ -921,63 +923,72 @@ describe("App", () => {
   });
 
   describe("sync status indicator", () => {
+    async function signIn(store: ReturnType<typeof fakeSyncedStore>) {
+      const auth = createMemoryAuthService(() =>
+        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
+      );
+      render(<App store={store} auth={auth} now={() => NOW} />);
+      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+    }
+
     it("shows no sync status indicator while signed out", () => {
-      const store = fakeSyncedStore("syncing");
+      const store = fakeSyncedStore("pending");
       render(<App store={store} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
 
-      expect(screen.queryByRole("status", { name: /Sync|Offline/ })).toBeNull();
+      expect(screen.queryByRole("status", { name: /Sync|Offline|Sending/ })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Save now" })).toBeNull();
     });
 
-    it("shows nothing extra once signed in while fully synced", async () => {
-      const store = fakeSyncedStore("synced");
-      const auth = createMemoryAuthService(() =>
-        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
-      );
-      render(<App store={store} auth={auth} now={() => NOW} />);
+    it("shows a synced indicator without Save now once signed in and fully synced", async () => {
+      await signIn(fakeSyncedStore("synced"));
 
-      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
-
-      expect(screen.queryByRole("status", { name: /Sync|Offline/ })).toBeNull();
+      expect(screen.getByRole("status", { name: "Synced" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Save now" })).toBeNull();
     });
 
-    it("indicates when a sync is in progress", async () => {
-      const store = fakeSyncedStore("syncing");
-      const auth = createMemoryAuthService(() =>
-        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
-      );
-      render(<App store={store} auth={auth} now={() => NOW} />);
+    it("indicates when a send is in progress, without Save now", async () => {
+      await signIn(fakeSyncedStore("sending"));
 
-      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+      expect(screen.getByRole("status", { name: "Sending…" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Save now" })).toBeNull();
+    });
 
-      expect(screen.getByRole("status", { name: "Syncing…" })).toBeInTheDocument();
+    it("tells when the next send happens while changes are waiting", async () => {
+      await signIn(fakeSyncedStore("pending"));
+
+      expect(screen.getByRole("status", { name: /^Not synced yet, next send at / })).toBeVisible();
+      expect(screen.getByRole("button", { name: "Save now" })).toBeEnabled();
     });
 
     it("indicates when the browser is offline", async () => {
-      const store = fakeSyncedStore("offline");
-      const auth = createMemoryAuthService(() =>
-        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
-      );
-      render(<App store={store} auth={auth} now={() => NOW} />);
-
-      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
+      await signIn(fakeSyncedStore("offline"));
 
       expect(
-        screen.getByRole("status", { name: "Offline — changes will sync once you're back online" }),
+        screen.getByRole("status", {
+          name: "Offline, changes will be sent once you're back online",
+        }),
       ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Save now" })).toBeInTheDocument();
     });
 
-    it("indicates when a sync has failed", async () => {
+    it("indicates when a send has failed, and follows the status as it changes", async () => {
       const store = fakeSyncedStore("synced");
-      const auth = createMemoryAuthService(() =>
-        Promise.resolve({ uid: "1", displayName: "Ada Lovelace", email: null }),
-      );
-      render(<App store={store} auth={auth} now={() => NOW} />);
-      await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
-      expect(screen.queryByRole("status", { name: "Sync failed" })).toBeNull();
+      await signIn(store);
+      expect(screen.queryByRole("status", { name: /Sync failed/ })).toBeNull();
 
       act(() => store.setSyncStatus("error"));
 
-      expect(screen.getByRole("status", { name: "Sync failed" })).toBeInTheDocument();
+      expect(screen.getByRole("status", { name: /^Sync failed/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Save now" })).toBeInTheDocument();
+    });
+
+    it("asks the store to send right away when the player presses Save now", async () => {
+      const store = fakeSyncedStore("pending");
+      await signIn(store);
+
+      await userEvent.click(screen.getByRole("button", { name: "Save now" }));
+
+      expect(store.saveNow).toHaveBeenCalledTimes(1);
     });
   });
 

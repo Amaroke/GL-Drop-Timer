@@ -1,10 +1,7 @@
 import { doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
 import type { AuthService } from "../auth/auth";
-import {
-  createFirestoreDropStore,
-  type SyncStatus,
-  type SyncStatusStore,
-} from "./firestoreDropStore";
+import { createFirestoreDropStore } from "./firestoreDropStore";
+import { createSendScheduler, type SyncStatus, type SyncStatusStore } from "./sendScheduler";
 import { isDropEntry, type DropStore } from "./dropStore";
 import { createNotifier } from "./pubSub";
 
@@ -15,11 +12,17 @@ type KeySubscription = {
 
 export type SyncedDropStore = DropStore & {
   getSyncStatus(): SyncStatus | null;
+  getNextSendAt(): number | null;
   subscribeSyncStatus(onChange: () => void): () => void;
+  saveNow(): void;
 };
 
 function syncStatusOf(store: DropStore): SyncStatusStore | null {
   return (store as DropStore & { syncStatus?: SyncStatusStore }).syncStatus ?? null;
+}
+
+function disposeStore(store: DropStore) {
+  (store as DropStore & { dispose?: () => void }).dispose?.();
 }
 
 export function createSyncedDropStore(deps: {
@@ -92,6 +95,8 @@ export function createSyncedDropStore(deps: {
       void activateForUid(state.user.uid, generation);
     } else if (state.status !== "restoring") {
       switchBacking(deps.localStore);
+      remoteStores.forEach(disposeStore);
+      remoteStores.clear();
     }
   }
 
@@ -102,6 +107,7 @@ export function createSyncedDropStore(deps: {
     get: (key) => backing.get(key),
     set(key, readyAt, updatedAt) {
       backing.set(key, readyAt, updatedAt);
+      if (backing !== deps.localStore) deps.localStore.set(key, readyAt, updatedAt);
       if (mergingGeneration === generation) wroteDuringMerge = true;
     },
     subscribe(key, onChange) {
@@ -115,7 +121,9 @@ export function createSyncedDropStore(deps: {
       };
     },
     getSyncStatus: () => syncStatusOf(backing)?.getStatus() ?? null,
+    getNextSendAt: () => syncStatusOf(backing)?.getNextSendAt() ?? null,
     subscribeSyncStatus: syncStatusNotifier.subscribe,
+    saveNow: () => syncStatusOf(backing)?.saveNow(),
   };
 }
 
@@ -148,7 +156,7 @@ export function createFirestoreSyncedDropStore(options: {
   return createSyncedDropStore({
     auth: options.auth,
     localStore: options.localStore,
-    createRemoteStore: (uid) => createFirestoreDropStore(options.db, uid),
+    createRemoteStore: (uid) => createFirestoreDropStore(options.db, uid, createSendScheduler()),
     mergeLocalIntoRemote: (uid) =>
       mergeLocalIntoAccount(options.db, uid, options.localStore, options.keys),
   });

@@ -30,3 +30,7 @@ export function toDatetimeLocalValue(ms: number) {
   const minutes = pad(date.getMinutes());
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
+
+export function formatClockTime(ms: number) {
+  return new Date(ms).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
