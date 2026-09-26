@@ -64,9 +64,45 @@ Status of a Building type with nothing left to build or upgrade at the current S
 _Avoid_: Complete, done
 
 **Next step**:
-An action the Planner recommends on a Colony, either building one Missing Building or raising one Building Below limit by one level, shown with the time it takes.
+An action the Planner recommends on a Colony, shown with the time it takes: building one Missing Building, raising one Building Below limit by one level, unlocking a Unit type or raising one Unit level by one.
 _Avoid_: Suggestion, todo, task
 
 **Planner**:
 The area of the app that tracks a Colony's Buildings against what the Star Base allows and recommends what to build or upgrade next.
 _Avoid_: Colonies tab, Colony tracker, progression view
+
+**Construction**:
+A Next step the Player has started, running until its Finish date. It stays pending until the Player applies it with Done or cancels it.
+_Avoid_: Timer, upgrade in progress, job
+
+**Finish date**:
+The instant at which a Construction is expected to end in the game.
+_Avoid_: Ready date, end time
+
+**Finished**:
+Status of a Construction whose Finish date has passed and that the Player has not yet applied.
+_Avoid_: Ready, complete
+
+**Laboratory**:
+The Building type that raises Unit levels on its own Colony. Its level caps the Unit level of every Unit type on that Colony.
+_Avoid_: Lab, research center
+
+**Unit type**:
+A kind of troop defined in the catalog (for example Marine), unlocked on a Colony by a Building type.
+_Avoid_: Troop, soldier
+
+**Unit level**:
+The level a Unit type has reached on one Colony. Unit levels are not shared between Colonies.
+_Avoid_: Unit upgrade, tech level
+
+**Worker**:
+A builder of one Colony. Each Colony has between one and five Workers, set by the Player, and each running Construction on that Colony occupies one of them.
+_Avoid_: Builder, slot
+
+**Research**:
+A Next step raising a Unit level that the Player has started in the Laboratory, running until its Finish date. It occupies no Worker, and a Colony runs at most one Research at a time.
+_Avoid_: Unit Construction, unit timer
+
+**Unlock**:
+A Next step taking a Unit type from not unlocked to level 1 in the Laboratory. Once started it runs until its Finish date, occupies no Worker, and a Colony runs at most one Unlock at a time, alongside at most one Research.
+_Avoid_: Unit Research, discovery
