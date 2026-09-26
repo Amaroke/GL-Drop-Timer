@@ -1,10 +1,13 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
+import { BuildingsList } from "./BuildingsList";
+import { groupedBuildingsForColony } from "../planner/buildings";
 import type { Catalog } from "../planner/catalog";
 import { COLONIES, MAIN_COLONY_ID, type ColonyDefinition } from "../planner/colonies";
-import type { ColonyStore } from "../store/colonyStore";
+import type { ColonyBuildings, ColonyStore } from "../store/colonyStore";
 
 const DEFAULT_STAR_BASE_LEVEL = 1;
 const OBSERVATORY_LEVEL_UNTRACKED = 0;
+const NO_BUILDINGS: ColonyBuildings = {};
 
 type PlannerProps = {
   store: ColonyStore;
@@ -21,30 +24,42 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
     (onChange: () => void) => store.subscribe(colony.id, onChange),
     [store, colony.id],
   );
-  const savedLevel = useSyncExternalStore(
-    subscribe,
-    () => store.get(colony.id)?.starBaseLevel ?? null,
-  );
-  const starBaseLevel = savedLevel ?? DEFAULT_STAR_BASE_LEVEL;
+  const entry = useSyncExternalStore(subscribe, () => store.get(colony.id));
+  const starBaseLevel = entry?.starBaseLevel ?? DEFAULT_STAR_BASE_LEVEL;
+  const buildings = entry?.buildings ?? NO_BUILDINGS;
+  const groups = groupedBuildingsForColony(catalog, colony.id);
   const selectId = `star-base-level-${colony.id}`;
 
+  function save(changes: { starBaseLevel?: number; buildings?: ColonyBuildings }) {
+    store.set(colony.id, { starBaseLevel, buildings, ...changes, updatedAt: now() });
+  }
+
   return (
-    <div role="tabpanel" aria-label={colony.name} className="flex items-center gap-3">
-      <label htmlFor={selectId} className="text-sm text-white/60">
-        Star Base level
-      </label>
-      <select
-        id={selectId}
-        value={starBaseLevel}
-        onChange={(event) => store.set(colony.id, Number(event.target.value), now())}
-        className="rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white"
-      >
-        {catalog.starBase.map(({ level }) => (
-          <option key={level} value={level}>
-            {level}
-          </option>
-        ))}
-      </select>
+    <div role="tabpanel" aria-label={colony.name}>
+      <div className="flex items-center gap-3">
+        <label htmlFor={selectId} className="text-sm text-white/60">
+          Star Base level
+        </label>
+        <select
+          id={selectId}
+          value={starBaseLevel}
+          onChange={(event) => save({ starBaseLevel: Number(event.target.value) })}
+          className="rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white"
+        >
+          {catalog.starBase.map(({ level }) => (
+            <option key={level} value={level}>
+              {level}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <BuildingsList
+        groups={groups}
+        starBaseLevel={starBaseLevel}
+        buildings={buildings}
+        onChange={(typeId, levels) => save({ buildings: { ...buildings, [typeId]: levels } })}
+      />
     </div>
   );
 }

@@ -2,8 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createLocalStorageColonyStore,
   createMemoryColonyStore,
+  type ColonyBuildings,
   type ColonyStore,
 } from "./colonyStore";
+
+function entry(starBaseLevel: number, updatedAt: number, buildings: ColonyBuildings = {}) {
+  return { starBaseLevel, buildings, updatedAt };
+}
 
 function behavesLikeAColonyStore(name: string, create: () => ColonyStore) {
   describe(name, () => {
@@ -11,28 +16,32 @@ function behavesLikeAColonyStore(name: string, create: () => ColonyStore) {
       expect(create().get("main")).toBeNull();
     });
 
-    it("records the Star Base level and the updatedAt timestamp", () => {
+    it("records the Star Base level, the Buildings and the updatedAt timestamp", () => {
       const store = create();
-      store.set("main", 4, 500);
-      expect(store.get("main")).toEqual({ starBaseLevel: 4, updatedAt: 500 });
+      store.set("main", entry(4, 500, { mine: [3, 1] }));
+      expect(store.get("main")).toEqual({
+        starBaseLevel: 4,
+        buildings: { mine: [3, 1] },
+        updatedAt: 500,
+      });
     });
 
     it("keeps each Colony separate", () => {
       const store = create();
-      store.set("main", 4, 500);
-      store.set("colony-1", 2, 600);
+      store.set("main", entry(4, 500));
+      store.set("colony-1", entry(2, 600));
       expect(store.get("main")?.starBaseLevel).toBe(4);
       expect(store.get("colony-1")?.starBaseLevel).toBe(2);
     });
 
-    it("notifies subscribers of that Colony when its level changes", () => {
+    it("notifies subscribers of that Colony when it changes", () => {
       const store = create();
       const onMain = vi.fn();
       const onOther = vi.fn();
       store.subscribe("main", onMain);
       store.subscribe("colony-1", onOther);
 
-      store.set("main", 3, 500);
+      store.set("main", entry(3, 500));
 
       expect(onMain).toHaveBeenCalledTimes(1);
       expect(onOther).not.toHaveBeenCalled();
@@ -44,7 +53,7 @@ function behavesLikeAColonyStore(name: string, create: () => ColonyStore) {
       const unsubscribe = store.subscribe("main", onChange);
       unsubscribe();
 
-      store.set("main", 3, 500);
+      store.set("main", entry(3, 500));
 
       expect(onChange).not.toHaveBeenCalled();
     });
@@ -59,21 +68,47 @@ describe("createLocalStorageColonyStore", () => {
 
   behavesLikeAColonyStore("as a Colony store", () => createLocalStorageColonyStore());
 
-  it("keeps a Star Base level across a new store instance", () => {
-    createLocalStorageColonyStore().set("main", 5, 700);
-    expect(createLocalStorageColonyStore().get("main")).toEqual({
-      starBaseLevel: 5,
-      updatedAt: 700,
-    });
+  it("keeps a Colony across a new store instance", () => {
+    createLocalStorageColonyStore().set("main", entry(5, 700, { mine: [2] }));
+    expect(createLocalStorageColonyStore().get("main")).toEqual(entry(5, 700, { mine: [2] }));
   });
 
-  it.each(["abc", "null", "{}", '{"starBaseLevel":"x","updatedAt":1}', '{"starBaseLevel":2}'])(
-    "treats the corrupted stored value %s as never set",
-    (value) => {
-      localStorage.setItem("gl-colony-main", value);
-      expect(createLocalStorageColonyStore().get("main")).toBeNull();
-    },
-  );
+  it("returns the same object until the stored value changes", () => {
+    const store = createLocalStorageColonyStore();
+    store.set("main", entry(2, 100));
+    const first = store.get("main");
+    expect(store.get("main")).toBe(first);
+
+    store.set("main", entry(3, 200));
+    expect(store.get("main")).not.toBe(first);
+  });
+
+  it("reads a Colony saved before Buildings were tracked as having none", () => {
+    localStorage.setItem("gl-colony-main", '{"starBaseLevel":2,"updatedAt":9}');
+    expect(createLocalStorageColonyStore().get("main")).toEqual(entry(2, 9));
+  });
+
+  it("reads the levels of a Building type in descending order", () => {
+    localStorage.setItem(
+      "gl-colony-main",
+      '{"starBaseLevel":2,"updatedAt":9,"buildings":{"mine":[1,3,2]}}',
+    );
+    expect(createLocalStorageColonyStore().get("main")).toEqual(entry(2, 9, { mine: [3, 2, 1] }));
+  });
+
+  it.each([
+    "abc",
+    "null",
+    "{}",
+    '{"starBaseLevel":"x","updatedAt":1}',
+    '{"starBaseLevel":2}',
+    '{"starBaseLevel":2,"updatedAt":1,"buildings":[]}',
+    '{"starBaseLevel":2,"updatedAt":1,"buildings":{"mine":"x"}}',
+    '{"starBaseLevel":2,"updatedAt":1,"buildings":{"mine":["x"]}}',
+  ])("treats the corrupted stored value %s as never set", (value) => {
+    localStorage.setItem("gl-colony-main", value);
+    expect(createLocalStorageColonyStore().get("main")).toBeNull();
+  });
 
   it("notifies when another tab writes the same Colony", () => {
     const store = createLocalStorageColonyStore();

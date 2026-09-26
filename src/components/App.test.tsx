@@ -19,15 +19,52 @@ import {
   createMemoryColonyStore,
   type ColonyStore,
 } from "../store/colonyStore";
-import type { Catalog } from "../planner/catalog";
+import type { BuildingType, Catalog, Category } from "../planner/catalog";
 import type { SyncStatus } from "../store/sendScheduler";
 
 const NOW = new Date("2026-01-01T12:00:00").getTime();
 const SIGNED_OUT_AUTH = createMemoryAuthService();
+function fixtureType(
+  id: string,
+  name: string,
+  category: Category,
+  mainOnly: boolean,
+  limits: [number, number][],
+): BuildingType {
+  return {
+    id,
+    name,
+    category,
+    mainOnly,
+    unlocks: limits.map(([maxCount, maxLevel], index) => ({
+      starBase: index + 1,
+      maxCount,
+      maxLevel,
+    })),
+    levels: [1, 2, 3, 4, 5, 6].map((level) => ({ level, time: null, cost: {} })),
+  };
+}
+
 const FIXTURE_CATALOG: Catalog = {
   version: 1,
   starBase: [1, 2, 3].map((level) => ({ level, time: null, cost: {}, requirements: {} })),
-  buildings: [],
+  buildings: [
+    fixtureType("observatory", "Observatory", "Resource", true, [
+      [1, 2],
+      [1, 4],
+      [1, 6],
+    ]),
+    fixtureType("mine", "Mine", "Resource", false, [
+      [2, 3],
+      [3, 5],
+      [4, 6],
+    ]),
+    fixtureType("cannon", "Cannon", "Tower", false, [
+      [1, 1],
+      [2, 2],
+      [3, 3],
+    ]),
+  ],
 };
 
 function authServiceFrom(
@@ -126,6 +163,34 @@ describe("App", () => {
       return screen.getByRole("combobox", { name: "Star Base level" });
     }
 
+    function seed(
+      colonyStore: ColonyStore,
+      starBaseLevel: number,
+      buildings: Record<string, number[]>,
+    ) {
+      colonyStore.set("main", { starBaseLevel, buildings, updatedAt: 1 });
+    }
+
+    function countInput(name: string) {
+      return screen.getByRole("spinbutton", { name: `${name} owned` });
+    }
+
+    function levelsOf(name: string) {
+      return within(screen.getByRole("group", { name }))
+        .queryAllByRole("spinbutton", { name: /level$/ })
+        .map((input) => (input as HTMLInputElement).value);
+    }
+
+    function click(name: string) {
+      return userEvent.click(screen.getByRole("button", { name }));
+    }
+
+    async function typeAndCommit(input: HTMLElement, value: string) {
+      await userEvent.clear(input);
+      await userEvent.type(input, value);
+      await userEvent.tab();
+    }
+
     it("sits below the Drop timers on the same page, without page tabs", () => {
       renderPlanner();
 
@@ -177,7 +242,7 @@ describe("App", () => {
       await userEvent.selectOptions(starBaseSelect(), "3");
 
       expect(starBaseSelect()).toHaveValue("3");
-      expect(colonyStore.get("main")).toEqual({ starBaseLevel: 3, updatedAt: NOW });
+      expect(colonyStore.get("main")).toEqual({ starBaseLevel: 3, buildings: {}, updatedAt: NOW });
     });
 
     it("keeps the Star Base level after a reload", async () => {
@@ -203,6 +268,250 @@ describe("App", () => {
         renderPlanner(createLocalStorageColonyStore());
 
         expect(starBaseSelect()).toHaveValue("3");
+      });
+
+      it("keeps the owned Buildings and their levels after a reload", async () => {
+        const { unmount } = renderPlanner(createLocalStorageColonyStore());
+        await click("Increase Mine owned");
+        await click("Increase Mine owned");
+        await click("Increase Mine 1 level");
+        unmount();
+
+        renderPlanner(createLocalStorageColonyStore());
+
+        expect(countInput("Mine")).toHaveValue(2);
+        expect(levelsOf("Mine")).toEqual(["2", "1"]);
+      });
+    });
+
+    describe("Buildings", () => {
+      it("lists every Building type of the catalog grouped by category", () => {
+        renderPlanner();
+
+        const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+        expect(headings).toEqual(["Resource", "Tower"]);
+        const names = within(screen.getByRole("tabpanel"))
+          .getAllByRole("group")
+          .map((group) => group.getAttribute("aria-label"));
+        expect(names).toEqual(["Observatory", "Mine", "Cannon"]);
+      });
+
+      it("shows the owned count against the maximum count of the Star Base", () => {
+        renderPlanner();
+
+        const mine = within(screen.getByRole("group", { name: "Mine" }));
+        expect(countInput("Mine")).toHaveValue(0);
+        expect(mine.getByText("/ 2")).toBeInTheDocument();
+      });
+
+      it("shows each level against the maximum level of the Star Base", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [3, 1] });
+        renderPlanner(colonyStore);
+
+        const mine = within(screen.getByRole("group", { name: "Mine" }));
+        expect(levelsOf("Mine")).toEqual(["3", "1"]);
+        expect(mine.getAllByText("/ 3")).toHaveLength(2);
+      });
+
+      it("updates every limit when the Star Base level changes", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [3] });
+        renderPlanner(colonyStore);
+
+        await userEvent.selectOptions(starBaseSelect(), "2");
+
+        const mine = within(screen.getByRole("group", { name: "Mine" }));
+        expect(mine.getByText("/ 3")).toBeInTheDocument();
+        expect(mine.getByText("/ 5")).toBeInTheDocument();
+        expect(colonyStore.get("main")?.buildings).toEqual({ mine: [3] });
+      });
+
+      it("adds an instance at level 1 when the count is raised with the button", async () => {
+        const colonyStore = createMemoryColonyStore();
+        renderPlanner(colonyStore);
+
+        await click("Increase Mine owned");
+
+        expect(countInput("Mine")).toHaveValue(1);
+        expect(levelsOf("Mine")).toEqual(["1"]);
+        expect(colonyStore.get("main")).toEqual({
+          starBaseLevel: 1,
+          buildings: { mine: [1] },
+          updatedAt: NOW,
+        });
+      });
+
+      it("removes the lowest-level instance when the count is lowered with the button", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, { mine: [5, 3, 1] });
+        renderPlanner(colonyStore);
+
+        await click("Decrease Mine owned");
+
+        expect(countInput("Mine")).toHaveValue(2);
+        expect(levelsOf("Mine")).toEqual(["5", "3"]);
+      });
+
+      it("sets the count by typing it, adding instances at level 1", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [3] });
+        renderPlanner(colonyStore);
+
+        await typeAndCommit(countInput("Mine"), "2");
+
+        expect(levelsOf("Mine")).toEqual(["3", "1"]);
+      });
+
+      it("commits a typed value on Enter", async () => {
+        renderPlanner();
+
+        await userEvent.type(countInput("Mine"), "{Backspace}2{Enter}");
+
+        expect(levelsOf("Mine")).toEqual(["1", "1"]);
+      });
+
+      it("removes the lowest-level instances when a lower count is typed", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, { mine: [5, 3, 1] });
+        renderPlanner(colonyStore);
+
+        await typeAndCommit(countInput("Mine"), "1");
+
+        expect(levelsOf("Mine")).toEqual(["5"]);
+      });
+
+      it("refuses a count above the maximum of the Star Base", async () => {
+        const colonyStore = createMemoryColonyStore();
+        renderPlanner(colonyStore);
+
+        await typeAndCommit(countInput("Mine"), "3");
+
+        expect(countInput("Mine")).toHaveValue(0);
+        expect(colonyStore.get("main")).toBeNull();
+      });
+
+      it("refuses a count that is not a whole number", async () => {
+        renderPlanner();
+
+        await typeAndCommit(countInput("Mine"), "1.5");
+
+        expect(countInput("Mine")).toHaveValue(0);
+      });
+
+      it("stops the count buttons at the limits", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [1, 1] });
+        renderPlanner(colonyStore);
+
+        expect(screen.getByRole("button", { name: "Increase Mine owned" })).toBeDisabled();
+        await click("Decrease Mine owned");
+        await click("Decrease Mine owned");
+        expect(screen.getByRole("button", { name: "Decrease Mine owned" })).toBeDisabled();
+      });
+
+      it("raises and lowers the level of one instance with the buttons", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [2, 1] });
+        renderPlanner(colonyStore);
+
+        await click("Increase Mine 1 level");
+        expect(levelsOf("Mine")).toEqual(["3", "1"]);
+        await click("Decrease Mine 1 level");
+        expect(levelsOf("Mine")).toEqual(["2", "1"]);
+      });
+
+      it("stops the level buttons at level 1 and at the maximum level", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [3, 1] });
+        renderPlanner(colonyStore);
+
+        expect(screen.getByRole("button", { name: "Increase Mine 1 level" })).toBeDisabled();
+        expect(screen.getByRole("button", { name: "Decrease Mine 2 level" })).toBeDisabled();
+      });
+
+      it("sets the level of an instance by typing it", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, { mine: [4] });
+        renderPlanner(colonyStore);
+
+        await typeAndCommit(screen.getByRole("spinbutton", { name: "Mine 1 level" }), "6");
+
+        expect(levelsOf("Mine")).toEqual(["6"]);
+        expect(colonyStore.get("main")?.buildings).toEqual({ mine: [6] });
+      });
+
+      it("refuses a level above the maximum of the Star Base or below 1", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [2] });
+        renderPlanner(colonyStore);
+        const level = screen.getByRole("spinbutton", { name: "Mine 1 level" });
+
+        await typeAndCommit(level, "4");
+        expect(levelsOf("Mine")).toEqual(["2"]);
+
+        await typeAndCommit(level, "0");
+        expect(levelsOf("Mine")).toEqual(["2"]);
+        expect(colonyStore.get("main")?.buildings).toEqual({ mine: [2] });
+      });
+
+      it("keeps the levels in descending order, sorting only when the edit is committed", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 2, { mine: [3, 2] });
+        renderPlanner(colonyStore);
+        const second = screen.getByRole("spinbutton", { name: "Mine 2 level" });
+
+        await userEvent.clear(second);
+        await userEvent.type(second, "5");
+        expect(levelsOf("Mine")).toEqual(["3", "5"]);
+
+        await userEvent.tab();
+        expect(levelsOf("Mine")).toEqual(["5", "3"]);
+        expect(colonyStore.get("main")?.buildings).toEqual({ mine: [5, 3] });
+      });
+
+      it("sorts the levels when a button raises one above another", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [2, 2] });
+        renderPlanner(colonyStore);
+
+        await click("Increase Mine 2 level");
+
+        expect(levelsOf("Mine")).toEqual(["3", "2"]);
+      });
+
+      it("keeps data above the limits when the Star Base level is lowered", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, { mine: [6, 5, 4, 1] });
+        renderPlanner(colonyStore);
+
+        await userEvent.selectOptions(starBaseSelect(), "1");
+
+        expect(levelsOf("Mine")).toEqual(["6", "5", "4", "1"]);
+        expect(screen.getByRole("button", { name: "Increase Mine owned" })).toBeDisabled();
+        expect(colonyStore.get("main")?.buildings).toEqual({ mine: [6, 5, 4, 1] });
+      });
+
+      it("keeps the other Building types when one changes", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [2] });
+        renderPlanner(colonyStore);
+
+        await click("Increase Cannon owned");
+
+        expect(colonyStore.get("main")?.buildings).toEqual({ mine: [2], cannon: [1] });
+      });
+
+      it("keeps the owned Buildings after a reload", async () => {
+        const colonyStore = createMemoryColonyStore();
+        const { unmount } = renderPlanner(colonyStore);
+        await click("Increase Mine owned");
+        await click("Increase Mine owned");
+        unmount();
+
+        renderPlanner(colonyStore);
+
+        expect(levelsOf("Mine")).toEqual(["1", "1"]);
       });
     });
   });
