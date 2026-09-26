@@ -2,11 +2,16 @@ import { useCallback, useState, useSyncExternalStore } from "react";
 import { BuildingsList } from "./BuildingsList";
 import { groupedBuildingsForColony } from "../planner/buildings";
 import type { Catalog } from "../planner/catalog";
-import { COLONIES, MAIN_COLONY_ID, type ColonyDefinition } from "../planner/colonies";
-import type { ColonyBuildings, ColonyStore } from "../store/colonyStore";
+import {
+  COLONIES,
+  isColonyUnlocked,
+  MAIN_COLONY_ID,
+  observatoryLevel,
+  type ColonyDefinition,
+} from "../planner/colonies";
+import type { ColonyBuildings, ColonyEntry, ColonyStore } from "../store/colonyStore";
 
 const DEFAULT_STAR_BASE_LEVEL = 1;
-const OBSERVATORY_LEVEL_UNTRACKED = 0;
 const NO_BUILDINGS: ColonyBuildings = {};
 
 type PlannerProps = {
@@ -15,16 +20,16 @@ type PlannerProps = {
   now: () => number;
 };
 
-function isUnlocked(colony: ColonyDefinition): boolean {
-  return colony.requiredObservatoryLevel <= OBSERVATORY_LEVEL_UNTRACKED;
+function useColonyEntry(store: ColonyStore, colonyId: string): ColonyEntry | null {
+  const subscribe = useCallback(
+    (onChange: () => void) => store.subscribe(colonyId, onChange),
+    [store, colonyId],
+  );
+  return useSyncExternalStore(subscribe, () => store.get(colonyId));
 }
 
 function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: ColonyDefinition }) {
-  const subscribe = useCallback(
-    (onChange: () => void) => store.subscribe(colony.id, onChange),
-    [store, colony.id],
-  );
-  const entry = useSyncExternalStore(subscribe, () => store.get(colony.id));
+  const entry = useColonyEntry(store, colony.id);
   const starBaseLevel = entry?.starBaseLevel ?? DEFAULT_STAR_BASE_LEVEL;
   const buildings = entry?.buildings ?? NO_BUILDINGS;
   const groups = groupedBuildingsForColony(catalog, colony.id);
@@ -66,7 +71,12 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
 
 export function Planner({ store, catalog, now }: PlannerProps) {
   const [activeId, setActiveId] = useState(MAIN_COLONY_ID);
-  const activeColony = COLONIES.find((colony) => colony.id === activeId) ?? COLONIES[0];
+  const observatory = observatoryLevel(
+    useColonyEntry(store, MAIN_COLONY_ID)?.buildings ?? NO_BUILDINGS,
+  );
+  const activeColony =
+    COLONIES.find((colony) => colony.id === activeId && isColonyUnlocked(colony, observatory)) ??
+    COLONIES[0];
 
   return (
     <section className="w-full flex-1 rounded-2xl border border-white/10 p-6">
@@ -74,26 +84,22 @@ export function Planner({ store, catalog, now }: PlannerProps) {
 
       <div role="tablist" aria-label="Colonies" className="mb-4 flex flex-wrap gap-1">
         {COLONIES.map((colony) => {
-          const unlocked = isUnlocked(colony);
+          const unlocked = isColonyUnlocked(colony, observatory);
           const selected = colony.id === activeColony.id;
           return (
             <button
               key={colony.id}
               type="button"
               role="tab"
+              aria-label={colony.name}
               aria-selected={selected}
               disabled={!unlocked}
               onClick={() => setActiveId(colony.id)}
-              className={`flex flex-col items-start rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+              className={`rounded-md px-2 py-1 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
                 selected ? "bg-white/12 text-[#e9e6f5]" : "text-white/40"
               } ${unlocked ? "" : "opacity-40"}`}
             >
-              <span>{colony.name}</span>
-              {!unlocked && (
-                <span className="text-xs font-normal">
-                  Requires Observatory level {colony.requiredObservatoryLevel}
-                </span>
-              )}
+              {colony.shortName}
             </button>
           );
         })}
