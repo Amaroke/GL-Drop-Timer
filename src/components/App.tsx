@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AccountControl } from "./AccountControl";
 import { Modal } from "./Modal";
 import { NotificationsControl } from "./NotificationsControl";
-import { PlannerPlaceholder } from "./PlannerPlaceholder";
+import { Planner } from "./Planner";
 import { TimerCard } from "./TimerCard";
 import { TimerChip, TimerChipSkeleton } from "./TimerChip";
 import type { AuthService } from "../auth/auth";
@@ -11,12 +11,16 @@ import { DROPS } from "../drops";
 import { useDropsTimers, type DropTimerState } from "../hooks/useDropsTimers";
 import { useReadyDropTitle } from "../hooks/useReadyDropTitle";
 import { useReadyNotifications } from "../hooks/useReadyNotifications";
+import { CATALOG, type Catalog } from "../planner/catalog";
+import { createMemoryColonyStore, type ColonyStore } from "../store/colonyStore";
 import type { DropStore } from "../store/dropStore";
 
 type AppProps = {
   store: DropStore;
   auth: AuthService;
   now: () => number;
+  colonyStore?: ColonyStore;
+  catalog?: Catalog;
 };
 
 const STORAGE_KEYS = DROPS.map((drop) => drop.storageKey);
@@ -53,7 +57,8 @@ function TimerChipsRow({
   );
 }
 
-function App({ store, auth, now }: AppProps) {
+function App({ store, auth, now, colonyStore, catalog = CATALOG }: AppProps) {
+  const [fallbackColonyStore] = useState(createMemoryColonyStore);
   useReadyDropTitle(store, STORAGE_KEYS, now);
   const { permission, requestPermission } = useReadyNotifications(DROPS, store, now);
   const timers = useDropsTimers(DROPS, store, now);
@@ -75,7 +80,7 @@ function App({ store, auth, now }: AppProps) {
           </div>
         </div>
 
-        <PlannerPlaceholder />
+        <Planner store={colonyStore ?? fallbackColonyStore} catalog={catalog} now={now} />
       </main>
 
       {advancedDrop && (
