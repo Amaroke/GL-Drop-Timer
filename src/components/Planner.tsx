@@ -1,6 +1,8 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { BuildingsList } from "./BuildingsList";
 import { NextSteps } from "./NextSteps";
+import { Tooltip } from "./Tooltip";
+import { formatLevelInfo } from "../lib/costFormat";
 import { groupedBuildingsForColony, withCount, withLevel } from "../planner/buildings";
 import type { NextStep } from "../planner/nextSteps";
 import { filterToUpgrade } from "../planner/statuses";
@@ -16,6 +18,24 @@ import type { ColonyBuildings, ColonyEntry, ColonyStore } from "../store/colonyS
 
 const DEFAULT_STAR_BASE_LEVEL = 1;
 const NO_BUILDINGS: ColonyBuildings = {};
+const REQUIREMENT_LABELS: Record<string, string> = {
+  starBattery: "Star Battery",
+  manaLight: "Mana Light",
+  colonies: "Colonies",
+};
+
+function nextStarBaseText(catalog: Catalog, starBaseLevel: number): string {
+  const next = catalog.starBase.find((info) => info.level === starBaseLevel + 1);
+  if (!next) return "Highest Star Base level";
+  const requirements = Object.entries(next.requirements);
+  const requirementsText =
+    requirements.length === 0
+      ? "No requirements"
+      : `Requires ${requirements
+          .map(([key, amount]) => `${REQUIREMENT_LABELS[key] ?? key} ${amount}`)
+          .join(", ")}`;
+  return `Next Star Base level ${next.level}: ${formatLevelInfo(next)}. ${requirementsText}`;
+}
 
 type PlannerProps = {
   store: ColonyStore;
@@ -64,18 +84,23 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
         <label htmlFor={selectId} className="text-sm text-white/60">
           Star Base level
         </label>
-        <select
-          id={selectId}
-          value={starBaseLevel}
-          onChange={(event) => save({ starBaseLevel: Number(event.target.value) })}
-          className="rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white"
-        >
-          {catalog.starBase.map(({ level }) => (
-            <option key={level} value={level}>
-              {level}
-            </option>
-          ))}
-        </select>
+        <Tooltip text={nextStarBaseText(catalog, starBaseLevel)} align="left">
+          {(tooltipId) => (
+            <select
+              id={selectId}
+              aria-describedby={tooltipId}
+              value={starBaseLevel}
+              onChange={(event) => save({ starBaseLevel: Number(event.target.value) })}
+              className="rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white"
+            >
+              {catalog.starBase.map(({ level }) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+          )}
+        </Tooltip>
         <label className="ml-auto flex items-center gap-2 text-sm text-white/60">
           <input
             type="checkbox"

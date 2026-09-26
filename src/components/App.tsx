@@ -11,6 +11,7 @@ import { DROPS } from "../drops";
 import { useDropsTimers, type DropTimerState } from "../hooks/useDropsTimers";
 import { useReadyDropTitle } from "../hooks/useReadyDropTitle";
 import { useReadyNotifications } from "../hooks/useReadyNotifications";
+import { TooltipsEnabledContext, useTooltipsSetting } from "../hooks/useTooltipsSetting";
 import { CATALOG, type Catalog } from "../planner/catalog";
 import { createMemoryColonyStore, type ColonyStore } from "../store/colonyStore";
 import type { DropStore } from "../store/dropStore";
@@ -64,6 +65,7 @@ function App({ store, auth, now, colonyStore, catalog = CATALOG }: AppProps) {
   const timers = useDropsTimers(DROPS, store, now);
   const [advancedDropKey, setAdvancedDropKey] = useState<string | null>(null);
   const advancedDrop = DROPS.find((drop) => drop.storageKey === advancedDropKey) ?? null;
+  const [tooltipsEnabled, setTooltipsEnabled] = useTooltipsSetting();
 
   return (
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-6 py-8">
@@ -80,7 +82,9 @@ function App({ store, auth, now, colonyStore, catalog = CATALOG }: AppProps) {
           </div>
         </div>
 
-        <Planner store={colonyStore ?? fallbackColonyStore} catalog={catalog} now={now} />
+        <TooltipsEnabledContext value={tooltipsEnabled}>
+          <Planner store={colonyStore ?? fallbackColonyStore} catalog={catalog} now={now} />
+        </TooltipsEnabledContext>
       </main>
 
       {advancedDrop && (
@@ -97,8 +101,15 @@ function App({ store, auth, now, colonyStore, catalog = CATALOG }: AppProps) {
         </Modal>
       )}
 
-      <footer className="mt-12 text-center text-sm text-white/30">
-        Timers are saved in your browser.
+      <footer className="mt-12 flex justify-center text-sm text-white/30">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={tooltipsEnabled}
+            onChange={(event) => setTooltipsEnabled(event.target.checked)}
+          />
+          Show tooltips
+        </label>
       </footer>
     </div>
   );

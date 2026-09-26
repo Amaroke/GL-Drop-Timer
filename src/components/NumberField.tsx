@@ -6,12 +6,13 @@ type NumberFieldProps = {
   min: number;
   max: number;
   onCommit: (value: number) => void;
+  describedBy?: string;
 };
 
 const BUTTON_CLASS =
   "flex size-7 items-center justify-center rounded-md border border-white/15 text-sm text-white/80 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent";
 
-export function NumberField({ label, value, min, max, onCommit }: NumberFieldProps) {
+export function NumberField({ label, value, min, max, onCommit, describedBy }: NumberFieldProps) {
   const [draft, setDraft] = useState<string | null>(null);
 
   function commit() {
@@ -36,6 +37,7 @@ export function NumberField({ label, value, min, max, onCommit }: NumberFieldPro
       <input
         type="number"
         aria-label={label}
+        aria-describedby={describedBy}
         min={min}
         max={max}
         value={draft ?? String(value)}

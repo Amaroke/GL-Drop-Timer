@@ -1,4 +1,7 @@
 import { NumberField } from "./NumberField";
+import { Tooltip } from "./Tooltip";
+import { formatLevelInfo } from "../lib/costFormat";
+import type { BuildingType } from "../planner/catalog";
 import {
   limitsAt,
   MIN_LEVEL,
@@ -32,6 +35,11 @@ function StatusBadge({ status, label }: { status: TypeStatus; label?: string }) 
       {STATUS_LABELS[status]}
     </span>
   );
+}
+
+function nextLevelText(type: BuildingType, level: number): string {
+  const next = type.levels.find((info) => info.level === level + 1);
+  return next ? `Next level ${next.level}: ${formatLevelInfo(next)}` : "No next level";
 }
 
 type BuildingsListProps = {
@@ -102,13 +110,20 @@ export function BuildingsList({ groups, starBaseLevel, buildings, onChange }: Bu
                               label={`${type.name} ${index + 1} status`}
                             />
                           )}
-                          <NumberField
-                            label={`${type.name} ${index + 1} level`}
-                            value={level}
-                            min={MIN_LEVEL}
-                            max={limits.maxLevel}
-                            onCommit={(next) => onChange(type.id, withLevel(levels, index, next))}
-                          />
+                          <Tooltip text={nextLevelText(type, level)}>
+                            {(tooltipId) => (
+                              <NumberField
+                                label={`${type.name} ${index + 1} level`}
+                                value={level}
+                                min={MIN_LEVEL}
+                                max={limits.maxLevel}
+                                describedBy={tooltipId}
+                                onCommit={(next) =>
+                                  onChange(type.id, withLevel(levels, index, next))
+                                }
+                              />
+                            )}
+                          </Tooltip>
                         </span>
                       </div>
                     );
