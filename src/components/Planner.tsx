@@ -1,5 +1,6 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { BuildingsList } from "./BuildingsList";
+import { NextSteps } from "./NextSteps";
 import { groupedBuildingsForColony } from "../planner/buildings";
 import { filterToUpgrade } from "../planner/statuses";
 import type { Catalog } from "../planner/catalog";
@@ -69,6 +70,13 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
           Only what to upgrade
         </label>
       </div>
+
+      <NextSteps
+        catalog={catalog}
+        colonyId={colony.id}
+        starBaseLevel={starBaseLevel}
+        buildings={buildings}
+      />
 
       <BuildingsList
         groups={groups}
