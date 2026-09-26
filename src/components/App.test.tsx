@@ -405,7 +405,7 @@ describe("App", () => {
         renderPlanner();
 
         const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-        expect(headings).toEqual(["Resource", "Tower"]);
+        expect(headings).toEqual(["Next steps", "Resource", "Tower"]);
         const names = within(screen.getByRole("tabpanel"))
           .getAllByRole("group")
           .map((group) => group.getAttribute("aria-label"));
@@ -743,7 +743,9 @@ describe("App", () => {
           await userEvent.click(filter());
 
           expect(typeNames()).toEqual([]);
-          expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
+          expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+            "Next steps",
+          ]);
 
           await userEvent.click(filter());
 
@@ -760,6 +762,145 @@ describe("App", () => {
 
           expect(typeNames()).toEqual(["Mine"]);
         });
+      });
+    });
+
+    describe("Next steps", () => {
+      function stepCatalog(): Catalog {
+        const withTimes = (type: BuildingType, times: (string | null)[]): BuildingType => ({
+          ...type,
+          levels: times.map((time, index) => ({
+            level: index + 1,
+            time,
+            cost: { coins: (index + 1) * 1000, minerals: (index + 1) * 10 },
+          })),
+        });
+        const [observatory, mine, cannon, laser] = FIXTURE_CATALOG.buildings;
+        return {
+          ...FIXTURE_CATALOG,
+          buildings: [
+            withTimes(observatory, ["1d", "2d", "3d", "4d", "5d", "6d"]),
+            withTimes(mine, ["30m", null, "50m", "60m", "70m", "80m"]),
+            withTimes(cannon, ["5m", "6m", "7m", "8m", "9m", "10m"]),
+            withTimes(laser, ["1m", "2m", "3m", "4m", "5m", "6m"]),
+          ],
+        };
+      }
+
+      function renderSteps(seedBuildings: Record<string, number[]>, starBase = 1) {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, starBase, seedBuildings);
+        render(
+          <App
+            store={createMemoryDropStore()}
+            auth={SIGNED_OUT_AUTH}
+            now={() => NOW}
+            colonyStore={colonyStore}
+            catalog={stepCatalog()}
+          />,
+        );
+      }
+
+      function stepItems() {
+        return within(screen.getByRole("list", { name: "Next steps" })).getAllByRole("listitem");
+      }
+
+      function steps() {
+        return stepItems().map((item) => {
+          const label = item.firstElementChild;
+          const time = item.querySelector("[aria-describedby]");
+          return `${label?.textContent} | ${time?.textContent}`;
+        });
+      }
+
+      function orderSelect() {
+        return screen.getByRole("combobox", { name: "Order" });
+      }
+
+      it("lists one step per Building to build or upgrade with its time", () => {
+        renderSteps({ observatory: [2], mine: [3, 2] });
+
+        expect(steps()).toEqual(["Upgrade Mine 2 to level 3 | 50m", "Build Cannon 1 | 5m"]);
+      });
+
+      it("shows the cost only in a tooltip, in every listed currency", () => {
+        renderSteps({ observatory: [2], mine: [3, 2] });
+
+        const [upgrade, build] = stepItems();
+        expect(within(upgrade).getByRole("tooltip")).toHaveTextContent("3,000 coins, 30 minerals");
+        expect(within(build).getByRole("tooltip")).toHaveTextContent("1,000 coins, 10 minerals");
+        const costs = screen.getAllByText(/coins/);
+        expect(costs.every((element) => element.getAttribute("role") === "tooltip")).toBe(true);
+      });
+
+      it("orders by category then time by default and by fastest on demand", async () => {
+        renderSteps({ observatory: [2], mine: [3, 2] });
+        expect(steps()).toEqual(["Upgrade Mine 2 to level 3 | 50m", "Build Cannon 1 | 5m"]);
+
+        await userEvent.selectOptions(orderSelect(), "Fastest first");
+
+        expect(steps()).toEqual(["Build Cannon 1 | 5m", "Upgrade Mine 2 to level 3 | 50m"]);
+      });
+
+      it("says the time is unknown and sorts that step last when ordering by fastest", async () => {
+        renderSteps({ observatory: [2], mine: [3, 1] });
+        expect(steps()).toEqual([
+          "Upgrade Mine 2 to level 2 | time unknown",
+          "Build Cannon 1 | 5m",
+        ]);
+
+        await userEvent.selectOptions(orderSelect(), "Fastest first");
+
+        expect(steps()).toEqual([
+          "Build Cannon 1 | 5m",
+          "Upgrade Mine 2 to level 2 | time unknown",
+        ]);
+      });
+
+      it("never recommends a type the Star Base level has not unlocked", async () => {
+        renderSteps({ observatory: [2], mine: [3, 3] });
+
+        expect(steps().filter((step) => step.includes("Laser"))).toEqual([]);
+
+        await userEvent.selectOptions(starBaseSelect(), "3");
+        await userEvent.selectOptions(orderSelect(), "Fastest first");
+
+        expect(steps().filter((step) => step.includes("Laser"))).toEqual(["Build Laser 1 | 1m"]);
+      });
+
+      it("shows only five steps by default with a toggle for the rest", async () => {
+        renderSteps({}, 3);
+
+        expect(steps()).toHaveLength(5);
+
+        await userEvent.click(screen.getByRole("button", { name: "Show all 9 steps" }));
+
+        expect(steps()).toHaveLength(9);
+
+        await userEvent.click(screen.getByRole("button", { name: "Show fewer steps" }));
+
+        expect(steps()).toHaveLength(5);
+      });
+
+      it("offers no toggle when five steps or fewer exist", () => {
+        renderSteps({ observatory: [2], mine: [3, 2] });
+
+        expect(screen.queryByRole("button", { name: /Show/ })).toBeNull();
+      });
+
+      it("says so when nothing is left to build or upgrade", () => {
+        renderSteps({ observatory: [2], mine: [3, 3], cannon: [1] });
+
+        expect(screen.getByText("Nothing to build or upgrade")).toBeInTheDocument();
+        expect(screen.queryByRole("list", { name: "Next steps" })).toBeNull();
+      });
+
+      it("updates the list when a Building is edited", async () => {
+        renderSteps({ observatory: [2], mine: [3, 2] });
+
+        await typeAndCommit(screen.getByRole("spinbutton", { name: "Mine 2 level" }), "3");
+
+        expect(steps()).toEqual(["Build Cannon 1 | 5m"]);
       });
     });
   });
