@@ -11,15 +11,13 @@ const ORDER_LABELS: Record<StepOrder, string> = {
 };
 
 const ALL_CATEGORIES = "all";
-const SELECT_CLASS =
-  "rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white";
 
 function stepLabel(step: NextStep): string {
   if (step.kind === "build" && step.shared) return `Build ${step.count} ${step.typeName}`;
   if (step.shared) return `Upgrade ${step.count} ${step.typeName} to level ${step.targetLevel}`;
   return step.kind === "build"
-    ? `Build ${step.typeName} ${step.instance}`
-    : `Upgrade ${step.typeName} ${step.instance} to level ${step.targetLevel}`;
+    ? `Build ${step.typeName}`
+    : `Upgrade ${step.typeName} to level ${step.targetLevel}`;
 }
 
 function StepRow({ step, onDone }: { step: NextStep; onDone: (step: NextStep) => void }) {
@@ -73,7 +71,7 @@ export function NextSteps({ catalog, colonyId, starBaseLevel, buildings, onDone 
                 event.target.value === ALL_CATEGORIES ? null : (event.target.value as Category),
               )
             }
-            className={SELECT_CLASS}
+            className="select"
           >
             <option value={ALL_CATEGORIES}>All categories</option>
             {CATEGORIES.map((value) => (
@@ -89,7 +87,7 @@ export function NextSteps({ catalog, colonyId, starBaseLevel, buildings, onDone 
             id={selectId}
             value={order}
             onChange={(event) => setOrder(event.target.value as StepOrder)}
-            className={SELECT_CLASS}
+            className="select"
           >
             {(Object.keys(ORDER_LABELS) as StepOrder[]).map((value) => (
               <option key={value} value={value}>

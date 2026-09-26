@@ -899,41 +899,41 @@ describe("App", () => {
       it("lists one step per Building to build or upgrade with its time", () => {
         renderSteps({ observatory: [2], mine: [3, 2] });
 
-        expect(steps()).toEqual(["Build Cannon 1 | 5m", "Upgrade Mine 2 to level 3 | 50m"]);
+        expect(steps()).toEqual(["Build Cannon | 5m", "Upgrade Mine to level 3 | 50m"]);
       });
 
       it("puts builds first, fastest first by default and longest first on demand", async () => {
         renderSteps({ observatory: [1], mine: [3, 2] });
         expect(orderSelect()).toHaveDisplayValue("Fastest first");
         expect(steps()).toEqual([
-          "Build Cannon 1 | 5m",
-          "Upgrade Mine 2 to level 3 | 50m",
-          "Upgrade Observatory 1 to level 2 | 2d",
+          "Build Cannon | 5m",
+          "Upgrade Mine to level 3 | 50m",
+          "Upgrade Observatory to level 2 | 2d",
         ]);
 
         await userEvent.selectOptions(orderSelect(), "Longest first");
 
         expect(steps()).toEqual([
-          "Build Cannon 1 | 5m",
-          "Upgrade Observatory 1 to level 2 | 2d",
-          "Upgrade Mine 2 to level 3 | 50m",
+          "Build Cannon | 5m",
+          "Upgrade Observatory to level 2 | 2d",
+          "Upgrade Mine to level 3 | 50m",
         ]);
       });
 
       it("says the time is unknown and sorts that step last in both orders", async () => {
         renderSteps({ observatory: [1], mine: [3, 1] });
         expect(steps()).toEqual([
-          "Build Cannon 1 | 5m",
-          "Upgrade Observatory 1 to level 2 | 2d",
-          "Upgrade Mine 2 to level 2 | time unknown",
+          "Build Cannon | 5m",
+          "Upgrade Observatory to level 2 | 2d",
+          "Upgrade Mine to level 2 | time unknown",
         ]);
 
         await userEvent.selectOptions(orderSelect(), "Longest first");
 
         expect(steps()).toEqual([
-          "Build Cannon 1 | 5m",
-          "Upgrade Observatory 1 to level 2 | 2d",
-          "Upgrade Mine 2 to level 2 | time unknown",
+          "Build Cannon | 5m",
+          "Upgrade Observatory to level 2 | 2d",
+          "Upgrade Mine to level 2 | time unknown",
         ]);
       });
 
@@ -943,10 +943,10 @@ describe("App", () => {
         await userEvent.selectOptions(screen.getByRole("combobox", { name: "Category" }), "Tower");
 
         expect(steps()).toEqual([
-          "Build Laser 1 | 1m",
-          "Build Cannon 1 | 5m",
-          "Build Cannon 2 | 5m",
-          "Build Cannon 3 | 5m",
+          "Build Laser | 1m",
+          "Build Cannon | 5m",
+          "Build Cannon | 5m",
+          "Build Cannon | 5m",
         ]);
 
         await userEvent.selectOptions(
@@ -965,7 +965,7 @@ describe("App", () => {
         await userEvent.selectOptions(starBaseSelect(), "3");
         await userEvent.selectOptions(orderSelect(), "Fastest first");
 
-        expect(steps().filter((step) => step.includes("Laser"))).toEqual(["Build Laser 1 | 1m"]);
+        expect(steps().filter((step) => step.includes("Laser"))).toEqual(["Build Laser | 1m"]);
       });
 
       it("shows only five steps by default with a toggle for the rest", async () => {
@@ -1000,14 +1000,14 @@ describe("App", () => {
 
         await typeAndCommit(screen.getByRole("spinbutton", { name: "Mine 2 level" }), "3");
 
-        expect(steps()).toEqual(["Build Cannon 1 | 5m"]);
+        expect(steps()).toEqual(["Build Cannon | 5m"]);
       });
 
       describe("Done", () => {
         it("adds an instance at level 1 for a build step", async () => {
           renderSteps({ observatory: [2], mine: [3, 3] });
 
-          await click("Done Build Cannon 1");
+          await click("Done Build Cannon");
 
           expect(levelsOf("Cannon")).toEqual(["1"]);
           expect(screen.getByText("Nothing to build or upgrade")).toBeInTheDocument();
@@ -1016,7 +1016,7 @@ describe("App", () => {
         it("raises that Building by one level for an upgrade step", async () => {
           renderSteps({ observatory: [2], mine: [3, 2], cannon: [1] });
 
-          await click("Done Upgrade Mine 2 to level 3");
+          await click("Done Upgrade Mine to level 3");
 
           expect(levelsOf("Mine")).toEqual(["3", "3"]);
           expect(
@@ -1030,10 +1030,12 @@ describe("App", () => {
         it("keeps the levels in descending order", async () => {
           renderSteps({ observatory: [2], mine: [2, 2], cannon: [1] });
 
-          await click("Done Upgrade Mine 2 to level 3");
+          await userEvent.click(
+            screen.getAllByRole("button", { name: "Done Upgrade Mine to level 3" })[1],
+          );
 
           expect(levelsOf("Mine")).toEqual(["3", "2"]);
-          expect(steps()).toEqual(["Upgrade Mine 2 to level 3 | 50m"]);
+          expect(steps()).toEqual(["Upgrade Mine to level 3 | 50m"]);
         });
 
         it("saves the change to the Colony", async () => {
@@ -1049,7 +1051,7 @@ describe("App", () => {
             />,
           );
 
-          await click("Done Build Cannon 1");
+          await click("Done Build Cannon");
 
           expect(colonyStore.get("main")).toEqual({
             starBaseLevel: 1,

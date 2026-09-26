@@ -84,7 +84,7 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
           id={selectId}
           value={starBaseLevel}
           onChange={(event) => save({ starBaseLevel: Number(event.target.value) })}
-          className="rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white"
+          className="select"
         >
           {catalog.starBase.map(({ level }) => (
             <option key={level} value={level}>
