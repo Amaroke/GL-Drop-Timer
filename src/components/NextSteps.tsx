@@ -1,6 +1,4 @@
 import { useId, useState } from "react";
-import { Tooltip } from "./Tooltip";
-import { formatCost, formatTime } from "../lib/costFormat";
 import { CATEGORIES, type Catalog, type Category } from "../planner/catalog";
 import { nextSteps, type NextStep, type StepOrder } from "../planner/nextSteps";
 import type { ColonyBuildings } from "../store/colonyStore";
@@ -29,17 +27,7 @@ function StepRow({ step, onDone }: { step: NextStep; onDone: (step: NextStep) =>
   return (
     <li className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2">
       <span className="text-sm text-[#e9e6f5]">{label}</span>
-      <Tooltip text={formatCost(step.cost)} className="ml-auto">
-        {(tooltipId) => (
-          <span
-            tabIndex={tooltipId ? 0 : undefined}
-            aria-describedby={tooltipId}
-            className={`text-xs text-white/60 ${tooltipId ? "cursor-help underline decoration-dotted" : ""}`}
-          >
-            {formatTime(step.time)}
-          </span>
-        )}
-      </Tooltip>
+      <span className="ml-auto text-xs text-white/60">{step.time ?? "time unknown"}</span>
       <button
         type="button"
         aria-label={`Done ${label}`}

@@ -1,8 +1,6 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { BuildingsList } from "./BuildingsList";
 import { NextSteps } from "./NextSteps";
-import { Tooltip } from "./Tooltip";
-import { formatLevelInfo } from "../lib/costFormat";
 import {
   groupedBuildingsForColony,
   withCount,
@@ -25,24 +23,6 @@ import type { ColonyBuildings, ColonyEntry, ColonyStore } from "../store/colonyS
 
 const DEFAULT_STAR_BASE_LEVEL = 1;
 const NO_BUILDINGS: ColonyBuildings = {};
-const REQUIREMENT_LABELS: Record<string, string> = {
-  starBattery: "Star Battery",
-  manaLight: "Mana Light",
-  colonies: "Colonies",
-};
-
-function nextStarBaseText(catalog: Catalog, starBaseLevel: number): string {
-  const next = catalog.starBase.find((info) => info.level === starBaseLevel + 1);
-  if (!next) return "Highest Star Base level";
-  const requirements = Object.entries(next.requirements);
-  const requirementsText =
-    requirements.length === 0
-      ? "No requirements"
-      : `Requires ${requirements
-          .map(([key, amount]) => `${REQUIREMENT_LABELS[key] ?? key} ${amount}`)
-          .join(", ")}`;
-  return `Next Star Base level ${next.level}: ${formatLevelInfo(next)}. ${requirementsText}`;
-}
 
 type PlannerProps = {
   store: ColonyStore;
@@ -100,23 +80,18 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
         <label htmlFor={selectId} className="text-sm text-white/60">
           Star Base level
         </label>
-        <Tooltip text={nextStarBaseText(catalog, starBaseLevel)} align="left">
-          {(tooltipId) => (
-            <select
-              id={selectId}
-              aria-describedby={tooltipId}
-              value={starBaseLevel}
-              onChange={(event) => save({ starBaseLevel: Number(event.target.value) })}
-              className="rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white"
-            >
-              {catalog.starBase.map(({ level }) => (
-                <option key={level} value={level}>
-                  {level}
-                </option>
-              ))}
-            </select>
-          )}
-        </Tooltip>
+        <select
+          id={selectId}
+          value={starBaseLevel}
+          onChange={(event) => save({ starBaseLevel: Number(event.target.value) })}
+          className="rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white"
+        >
+          {catalog.starBase.map(({ level }) => (
+            <option key={level} value={level}>
+              {level}
+            </option>
+          ))}
+        </select>
         <label className="ml-auto flex items-center gap-2 text-sm text-white/60">
           <input
             type="checkbox"
@@ -161,12 +136,7 @@ type ColonyTabProps = {
 function ColonyTab({ colony, store, catalog, unlocked, selected, onSelect }: ColonyTabProps) {
   const entry = useColonyEntry(store, colony.id);
   const starBaseLevel = entry?.starBaseLevel ?? DEFAULT_STAR_BASE_LEVEL;
-  const progress = colonyProgress(
-    catalog,
-    colony.id,
-    starBaseLevel,
-    entry?.buildings ?? NO_BUILDINGS,
-  );
+  const progress = colonyProgress(catalog, colony.id, entry?.buildings ?? NO_BUILDINGS);
   const overall = percent(progress.overall);
 
   return (
@@ -196,28 +166,19 @@ function ColonyTab({ colony, store, catalog, unlocked, selected, onSelect }: Col
         aria-label={`${colony.name} progress`}
         className="relative flex w-full flex-col items-center gap-0.5"
       >
-        <Tooltip
-          text={`${overall}% overall, ${percent(progress.current)}% of Star Base ${starBaseLevel}`}
-          align="left"
-          className="flex w-full"
+        <div
+          role="progressbar"
+          aria-label="Overall progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={overall}
+          className="h-1.5 w-full rounded-full bg-white/10"
         >
-          {(tooltipId) => (
-            <div
-              role="progressbar"
-              aria-label="Overall progress"
-              aria-describedby={tooltipId}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={overall}
-              className="h-1.5 w-full rounded-full bg-white/10"
-            >
-              <div
-                className="h-full rounded-full bg-green-400/70"
-                style={{ width: `${progress.overall * 100}%` }}
-              />
-            </div>
-          )}
-        </Tooltip>
+          <div
+            className="h-full rounded-full bg-green-400/70"
+            style={{ width: `${progress.overall * 100}%` }}
+          />
+        </div>
         <span className="text-[10px] leading-none text-white/50">SB {starBaseLevel}</span>
       </div>
     </div>

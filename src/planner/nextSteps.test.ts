@@ -19,11 +19,7 @@ function type(
       maxCount,
       maxLevel,
     })),
-    levels: times.map((time, index) => ({
-      level: index + 1,
-      time,
-      cost: { coins: (index + 1) * 100, minerals: (index + 1) * 10 },
-    })),
+    levels: times.map((time, index) => ({ level: index + 1, time })),
   };
 }
 
@@ -121,12 +117,12 @@ describe("nextSteps", () => {
     expect(labels(steps.filter((step) => step.typeId === "cannon"))).toEqual([]);
   });
 
-  it("takes the time and the cost of the target level from the catalog", () => {
+  it("takes the time of the target level from the catalog", () => {
     const [step] = nextSteps(CATALOG, "colony-1", 1, { mine: [3, 1] }, "fastest").filter(
       (candidate) => candidate.typeId === "mine",
     );
 
-    expect(step).toMatchObject({ time: "20m", seconds: 1200, cost: { coins: 200, minerals: 20 } });
+    expect(step).toMatchObject({ time: "20m", seconds: 1200 });
   });
 
   it("never recommends a type that the Star Base level has not unlocked", () => {
@@ -236,7 +232,7 @@ describe("nextSteps", () => {
     ]);
   });
 
-  it("gives an empty cost and an unknown time to a level the catalog does not list", () => {
+  it("gives an unknown time to a level the catalog does not list", () => {
     const short: Catalog = {
       ...CATALOG,
       buildings: [type("mine", "Resource", [[1, 3]], ["1m"])],
@@ -244,31 +240,6 @@ describe("nextSteps", () => {
 
     const steps = nextSteps(short, "main", 1, { mine: [1] }, "fastest");
 
-    expect(steps[0]).toMatchObject({ targetLevel: 2, time: null, seconds: null, cost: {} });
-  });
-
-  it("never lets the cost order anything", () => {
-    const priced: Catalog = {
-      ...CATALOG,
-      buildings: [
-        {
-          ...type("cheap", "Resource", [[1, 1]], ["2m"]),
-          levels: [{ level: 1, time: "2m", cost: { coins: 1 } }],
-        },
-        {
-          ...type("costly", "Resource", [[1, 1]], ["1m"]),
-          levels: [{ level: 1, time: "1m", cost: { coins: 999999 } }],
-        },
-      ],
-    };
-
-    expect(labels(nextSteps(priced, "main", 1, {}, "fastest"))).toEqual([
-      "build:costly:1:1",
-      "build:cheap:1:1",
-    ]);
-    expect(labels(nextSteps(priced, "main", 1, {}, "longest"))).toEqual([
-      "build:cheap:1:1",
-      "build:costly:1:1",
-    ]);
+    expect(steps[0]).toMatchObject({ targetLevel: 2, time: null, seconds: null });
   });
 });

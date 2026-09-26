@@ -4,7 +4,6 @@ import type { ColonyBuildings } from "../store/colonyStore";
 
 export type ColonyProgress = {
   overall: number;
-  current: number;
 };
 
 function capacity(types: BuildingType[], starBaseLevel: number): number {
@@ -29,13 +28,11 @@ function ratio(part: number, whole: number): number {
 export function colonyProgress(
   catalog: Catalog,
   colonyId: string,
-  starBaseLevel: number,
   buildings: ColonyBuildings,
 ): ColonyProgress {
   const types = groupedBuildingsForColony(catalog, colonyId).flatMap((group) => group.types);
   const highest = Math.max(0, ...catalog.starBase.map((info) => info.level));
   return {
     overall: ratio(reached(types, highest, buildings), capacity(types, highest)),
-    current: ratio(reached(types, starBaseLevel, buildings), capacity(types, starBaseLevel)),
   };
 }

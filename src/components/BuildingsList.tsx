@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
 import { NumberField } from "./NumberField";
-import { Tooltip } from "./Tooltip";
-import { formatLevelInfo } from "../lib/costFormat";
-import { scaleCost, type BuildingType } from "../planner/catalog";
 import {
   limitsAt,
   MIN_LEVEL,
@@ -13,7 +10,6 @@ import {
   withSharedLevel,
   type CategoryGroup,
 } from "../planner/buildings";
-import { formatDuration, parseDuration } from "../planner/nextSteps";
 import {
   instanceStatus,
   typeStatuses,
@@ -48,22 +44,6 @@ function StatusBadge({ status, label }: { status: TypeStatus; label?: string }) 
   );
 }
 
-function nextLevelText(type: BuildingType, level: number): string {
-  const next = type.levels.find((info) => info.level === level + 1);
-  return next ? `Next level ${next.level}: ${formatLevelInfo(next)}` : "No next level";
-}
-
-function nextSharedLevelText(type: BuildingType, level: number, count: number): string {
-  const next = type.levels.find((info) => info.level === level + 1);
-  if (!next) return "No next level";
-  const seconds = parseDuration(next.time);
-  return `Next level ${next.level} for ${count} ${type.name}: ${formatLevelInfo({
-    ...next,
-    time: seconds === null ? null : formatDuration(seconds * count),
-    cost: scaleCost(next.cost, count),
-  })}`;
-}
-
 const CHIP_STYLES: Record<InstanceStatus | "maxed", string> = {
   "below-limit": "border-blue-400/40 bg-blue-500/10",
   "over-limit": "border-red-400/50 bg-red-500/10",
@@ -73,11 +53,10 @@ const CHIP_STYLES: Record<InstanceStatus | "maxed", string> = {
 type LevelChipProps = {
   status: InstanceStatus | null;
   statusLabel?: string;
-  tooltip: string;
-  children: (tooltipId: string | undefined) => ReactNode;
+  children: ReactNode;
 };
 
-function LevelChip({ status, statusLabel, tooltip, children }: LevelChipProps) {
+function LevelChip({ status, statusLabel, children }: LevelChipProps) {
   return (
     <span className={`rounded-lg border px-1 py-0.5 ${CHIP_STYLES[status ?? "maxed"]}`}>
       {status && statusLabel && (
@@ -85,7 +64,7 @@ function LevelChip({ status, statusLabel, tooltip, children }: LevelChipProps) {
           {STATUS_LABELS[status]}
         </span>
       )}
-      <Tooltip text={tooltip}>{children}</Tooltip>
+      {children}
     </span>
   );
 }
@@ -163,23 +142,15 @@ export function BuildingsList({ groups, starBaseLevel, buildings, onChange }: Bu
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {type.sharedLevel ? (
-                          <LevelChip
-                            status={instanceStatus(limits, 0, sharedLevel(levels))}
-                            tooltip={nextSharedLevelText(type, sharedLevel(levels), levels.length)}
-                          >
-                            {(tooltipId) => (
-                              <NumberField
-                                compact
-                                label={`${type.name} level`}
-                                value={sharedLevel(levels)}
-                                min={MIN_LEVEL}
-                                max={limits.maxLevel}
-                                describedBy={tooltipId}
-                                onCommit={(next) =>
-                                  onChange(type.id, withSharedLevel(levels, next))
-                                }
-                              />
-                            )}
+                          <LevelChip status={instanceStatus(limits, 0, sharedLevel(levels))}>
+                            <NumberField
+                              compact
+                              label={`${type.name} level`}
+                              value={sharedLevel(levels)}
+                              min={MIN_LEVEL}
+                              max={limits.maxLevel}
+                              onCommit={(next) => onChange(type.id, withSharedLevel(levels, next))}
+                            />
                           </LevelChip>
                         ) : (
                           levels.map((level, index) => (
@@ -187,21 +158,17 @@ export function BuildingsList({ groups, starBaseLevel, buildings, onChange }: Bu
                               key={index}
                               status={instanceStatus(limits, index, level)}
                               statusLabel={`${type.name} ${index + 1} status`}
-                              tooltip={nextLevelText(type, level)}
                             >
-                              {(tooltipId) => (
-                                <NumberField
-                                  compact
-                                  label={`${type.name} ${index + 1} level`}
-                                  value={level}
-                                  min={MIN_LEVEL}
-                                  max={limits.maxLevel}
-                                  describedBy={tooltipId}
-                                  onCommit={(next) =>
-                                    onChange(type.id, withLevel(levels, index, next))
-                                  }
-                                />
-                              )}
+                              <NumberField
+                                compact
+                                label={`${type.name} ${index + 1} level`}
+                                value={level}
+                                min={MIN_LEVEL}
+                                max={limits.maxLevel}
+                                onCommit={(next) =>
+                                  onChange(type.id, withLevel(levels, index, next))
+                                }
+                              />
                             </LevelChip>
                           ))
                         )}

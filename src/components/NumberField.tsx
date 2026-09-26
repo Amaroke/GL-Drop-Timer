@@ -6,7 +6,6 @@ type NumberFieldProps = {
   min: number;
   max: number;
   onCommit: (value: number) => void;
-  describedBy?: string;
   compact?: boolean;
 };
 
@@ -23,7 +22,6 @@ export function NumberField({
   min,
   max,
   onCommit,
-  describedBy,
   compact = false,
 }: NumberFieldProps) {
   const buttonClass = `${BUTTON_CLASS} ${compact ? COMPACT_BUTTON : REGULAR_BUTTON}`;
@@ -51,7 +49,6 @@ export function NumberField({
       <input
         type="number"
         aria-label={label}
-        aria-describedby={describedBy}
         min={min}
         max={max}
         value={draft ?? String(value)}
