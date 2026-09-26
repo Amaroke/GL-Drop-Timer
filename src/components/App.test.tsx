@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -140,6 +140,12 @@ describe("App", () => {
       expect(notifications.closest(".hidden")).toHaveClass("hidden", "sm:block");
       expect(screen.getByRole("button", { name: "Start Star Battery timer" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeInTheDocument();
+    });
+
+    it("does not say in the footer that timers are saved in the browser", () => {
+      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+
+      expect(screen.getByRole("contentinfo")).not.toHaveTextContent("saved in your browser");
     });
 
     it("keeps the Drop timers and the Planner inside the main landmark", () => {
@@ -762,6 +768,148 @@ describe("App", () => {
 
           expect(typeNames()).toEqual(["Mine"]);
         });
+      });
+    });
+
+    describe("Tooltips", () => {
+      function tooltipCatalog(): Catalog {
+        const [observatory, mine, cannon, laser] = FIXTURE_CATALOG.buildings;
+        return {
+          ...FIXTURE_CATALOG,
+          starBase: [
+            { level: 1, time: null, cost: {}, requirements: {} },
+            { level: 2, time: "10m", cost: { coins: 4340 }, requirements: {} },
+            {
+              level: 3,
+              time: "4h",
+              cost: { coins: 26040, minerals: 500 },
+              requirements: { starBattery: 4, manaLight: 1, colonies: 2 },
+            },
+          ],
+          buildings: [
+            observatory,
+            {
+              ...mine,
+              levels: [
+                { level: 1, time: "30m", cost: { coins: 1000 } },
+                { level: 2, time: null, cost: { coins: 2000, minerals: 20 } },
+                { level: 3, time: "50m", cost: { coins: 3000, minerals: 30 } },
+              ],
+            },
+            cannon,
+            laser,
+          ],
+        };
+      }
+
+      function renderTooltips(seedBuildings: Record<string, number[]>, starBase = 1) {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, starBase, seedBuildings);
+        render(
+          <App
+            store={createMemoryDropStore()}
+            auth={SIGNED_OUT_AUTH}
+            now={() => NOW}
+            colonyStore={colonyStore}
+            catalog={tooltipCatalog()}
+          />,
+        );
+      }
+
+      function levelInput(name: string) {
+        return screen.getByRole("spinbutton", { name: `${name} level` });
+      }
+
+      it("shows the time and cost of the next level on a Building level", () => {
+        renderTooltips({ observatory: [2], mine: [2, 1] }, 2);
+
+        expect(levelInput("Mine 1")).toHaveAccessibleDescription(
+          "Next level 3: 50m, 3,000 coins, 30 minerals",
+        );
+        expect(levelInput("Mine 2")).toHaveAccessibleDescription(
+          "Next level 2: time unknown, 2,000 coins, 20 minerals",
+        );
+      });
+
+      it("follows the level when it changes", async () => {
+        renderTooltips({ observatory: [2], mine: [1] }, 2);
+
+        await click("Increase Mine 1 level");
+
+        expect(levelInput("Mine 1")).toHaveAccessibleDescription(
+          "Next level 3: 50m, 3,000 coins, 30 minerals",
+        );
+      });
+
+      it("says when a Building has no next level in the catalog", () => {
+        renderTooltips({ observatory: [2], mine: [3] }, 3);
+
+        expect(levelInput("Mine 1")).toHaveAccessibleDescription("No next level");
+      });
+
+      it("shows the time, cost and requirements of the next Star Base level", async () => {
+        renderTooltips({});
+
+        expect(starBaseSelect()).toHaveAccessibleDescription(
+          "Next Star Base level 2: 10m, 4,340 coins. No requirements",
+        );
+
+        await userEvent.selectOptions(starBaseSelect(), "2");
+
+        expect(starBaseSelect()).toHaveAccessibleDescription(
+          "Next Star Base level 3: 4h, 26,040 coins, 500 minerals. Requires Star Battery 4, Mana Light 1, Colonies 2",
+        );
+      });
+
+      describe("setting", () => {
+        beforeEach(() => localStorage.clear());
+        afterEach(() => localStorage.clear());
+
+        function tooltipsCheckbox() {
+          return within(screen.getByRole("contentinfo")).getByRole("checkbox", {
+            name: "Show tooltips",
+          });
+        }
+
+        it("shows tooltips by default from a checkbox in the footer", () => {
+          renderTooltips({ observatory: [2], mine: [2] }, 2);
+
+          expect(tooltipsCheckbox()).toBeChecked();
+          expect(screen.getAllByRole("tooltip").length).toBeGreaterThan(0);
+        });
+
+        it("hides every tooltip when unchecked", async () => {
+          renderTooltips({ observatory: [2], mine: [2] }, 2);
+
+          await userEvent.click(tooltipsCheckbox());
+
+          expect(screen.queryAllByRole("tooltip")).toEqual([]);
+          expect(levelInput("Mine 1")).not.toHaveAttribute("aria-describedby");
+          expect(starBaseSelect()).not.toHaveAttribute("aria-describedby");
+        });
+
+        it("keeps the choice after a reload", async () => {
+          renderTooltips({ observatory: [2], mine: [2] }, 2);
+          await userEvent.click(tooltipsCheckbox());
+          cleanup();
+
+          renderTooltips({ observatory: [2], mine: [2] }, 2);
+
+          expect(tooltipsCheckbox()).not.toBeChecked();
+          expect(screen.queryAllByRole("tooltip")).toEqual([]);
+        });
+      });
+
+      it("never blocks the Star Base level on its requirements", async () => {
+        renderTooltips({}, 2);
+
+        await userEvent.selectOptions(starBaseSelect(), "3");
+
+        expect(starBaseSelect()).toHaveValue("3");
+        expect(starBaseSelect()).toHaveAccessibleDescription("Highest Star Base level");
+        expect(screen.queryByRole("list", { name: "Next steps" })?.textContent ?? "").not.toContain(
+          "Star Base",
+        );
       });
     });
 

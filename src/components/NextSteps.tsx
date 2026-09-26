@@ -1,5 +1,7 @@
 import { useId, useState } from "react";
-import type { Catalog, Cost } from "../planner/catalog";
+import { Tooltip } from "./Tooltip";
+import { formatCost, formatTime } from "../lib/costFormat";
+import type { Catalog } from "../planner/catalog";
 import { nextSteps, type NextStep, type StepOrder } from "../planner/nextSteps";
 import type { ColonyBuildings } from "../store/colonyStore";
 
@@ -16,36 +18,22 @@ function stepLabel(step: NextStep): string {
     : `Upgrade ${step.typeName} ${step.instance} to level ${step.targetLevel}`;
 }
 
-function costText(cost: Cost): string {
-  const entries = Object.entries(cost);
-  if (entries.length === 0) return "No cost listed";
-  return entries
-    .map(([currency, amount]) => `${amount.toLocaleString("en-US")} ${currency}`)
-    .join(", ");
-}
-
 function StepRow({ step, onDone }: { step: NextStep; onDone: (step: NextStep) => void }) {
-  const tooltipId = useId();
   const label = stepLabel(step);
   return (
     <li className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2">
       <span className="text-sm text-[#e9e6f5]">{label}</span>
-      <span className="group relative ml-auto">
-        <span
-          tabIndex={0}
-          aria-describedby={tooltipId}
-          className="cursor-help text-xs text-white/60 underline decoration-dotted"
-        >
-          {step.time ?? "time unknown"}
-        </span>
-        <span
-          id={tooltipId}
-          role="tooltip"
-          className="pointer-events-none invisible absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-lg border border-white/15 bg-[#120c24] px-2 py-1 text-xs text-white group-focus-within:visible group-hover:visible"
-        >
-          {costText(step.cost)}
-        </span>
-      </span>
+      <Tooltip text={formatCost(step.cost)} className="ml-auto">
+        {(tooltipId) => (
+          <span
+            tabIndex={tooltipId ? 0 : undefined}
+            aria-describedby={tooltipId}
+            className={`text-xs text-white/60 ${tooltipId ? "cursor-help underline decoration-dotted" : ""}`}
+          >
+            {formatTime(step.time)}
+          </span>
+        )}
+      </Tooltip>
       <button
         type="button"
         aria-label={`Done ${label}`}
