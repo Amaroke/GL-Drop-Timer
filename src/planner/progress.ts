@@ -30,7 +30,9 @@ export function colonyProgress(
   colonyId: string,
   buildings: ColonyBuildings,
 ): ColonyProgress {
-  const types = groupedBuildingsForColony(catalog, colonyId).flatMap((group) => group.types);
+  const types = groupedBuildingsForColony(catalog, colonyId)
+    .flatMap((group) => group.types)
+    .filter((type) => !type.sharedLevel);
   const highest = Math.max(0, ...catalog.starBase.map((info) => info.level));
   return {
     overall: ratio(reached(types, highest, buildings), capacity(types, highest)),

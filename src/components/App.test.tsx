@@ -1105,6 +1105,16 @@ describe("App", () => {
         return screen.getByRole("spinbutton", { name: "Walls level" });
       }
 
+      it("leaves Walls out of the Colony progress", () => {
+        renderWalls([]);
+
+        expect(
+          within(screen.getByRole("group", { name: "Main planet progress" })).getByRole(
+            "progressbar",
+          ),
+        ).toHaveAttribute("aria-valuenow", "100");
+      });
+
       function stepList() {
         return within(screen.getByRole("list", { name: "Next steps" }));
       }
