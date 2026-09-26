@@ -948,7 +948,7 @@
       "id": "laboratory",
       "name": "Laboratory",
       "category": "Military",
-      "mainOnly": true,
+      "mainOnly": false,
       "unlocks": [
         {
           "starBase": 1,
