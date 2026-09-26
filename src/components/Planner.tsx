@@ -3,8 +3,15 @@ import { BuildingsList } from "./BuildingsList";
 import { NextSteps } from "./NextSteps";
 import { Tooltip } from "./Tooltip";
 import { formatLevelInfo } from "../lib/costFormat";
-import { groupedBuildingsForColony, withCount, withLevel } from "../planner/buildings";
+import {
+  groupedBuildingsForColony,
+  withCount,
+  withLevel,
+  withSharedCount,
+  withSharedLevel,
+} from "../planner/buildings";
 import type { NextStep } from "../planner/nextSteps";
+import { colonyProgress } from "../planner/progress";
 import { filterToUpgrade } from "../planner/statuses";
 import type { Catalog } from "../planner/catalog";
 import {
@@ -70,6 +77,15 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
 
   function applyStep(step: NextStep) {
     const levels = buildings[step.typeId] ?? [];
+    if (step.shared) {
+      saveLevels(
+        step.typeId,
+        step.kind === "build"
+          ? withSharedCount(levels, levels.length + step.count)
+          : withSharedLevel(levels, step.targetLevel),
+      );
+      return;
+    }
     saveLevels(
       step.typeId,
       step.kind === "build"
@@ -129,6 +145,85 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
   );
 }
 
+function percent(ratio: number): number {
+  return Math.floor(Number((ratio * 100).toFixed(6)));
+}
+
+type ColonyTabProps = {
+  colony: ColonyDefinition;
+  store: ColonyStore;
+  catalog: Catalog;
+  unlocked: boolean;
+  selected: boolean;
+  onSelect: () => void;
+};
+
+function ColonyTab({ colony, store, catalog, unlocked, selected, onSelect }: ColonyTabProps) {
+  const entry = useColonyEntry(store, colony.id);
+  const starBaseLevel = entry?.starBaseLevel ?? DEFAULT_STAR_BASE_LEVEL;
+  const progress = colonyProgress(
+    catalog,
+    colony.id,
+    starBaseLevel,
+    entry?.buildings ?? NO_BUILDINGS,
+  );
+  const overall = percent(progress.overall);
+
+  return (
+    <div
+      role="presentation"
+      className={`relative flex flex-col items-center gap-1 rounded-lg border px-2 pt-0.5 pb-1.5 transition-colors ${
+        selected
+          ? "border-white/20 bg-white/8"
+          : "border-transparent hover:border-white/10 hover:bg-white/4"
+      } ${unlocked ? "" : "opacity-40"}`}
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-label={colony.name}
+        aria-selected={selected}
+        disabled={!unlocked}
+        onClick={onSelect}
+        className={`w-full py-1 text-center text-sm font-medium transition-colors after:absolute after:inset-0 after:rounded-lg disabled:cursor-not-allowed ${
+          selected ? "text-[#e9e6f5]" : "text-white/40"
+        }`}
+      >
+        {colony.shortName}
+      </button>
+      <div
+        role="group"
+        aria-label={`${colony.name} progress`}
+        className="relative flex w-full flex-col items-center gap-0.5"
+      >
+        <Tooltip
+          text={`${overall}% overall, ${percent(progress.current)}% of Star Base ${starBaseLevel}`}
+          align="left"
+          className="flex w-full"
+        >
+          {(tooltipId) => (
+            <div
+              role="progressbar"
+              aria-label="Overall progress"
+              aria-describedby={tooltipId}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={overall}
+              className="h-1.5 w-full rounded-full bg-white/10"
+            >
+              <div
+                className="h-full rounded-full bg-green-400/70"
+                style={{ width: `${progress.overall * 100}%` }}
+              />
+            </div>
+          )}
+        </Tooltip>
+        <span className="text-[10px] leading-none text-white/50">SB {starBaseLevel}</span>
+      </div>
+    </div>
+  );
+}
+
 export function Planner({ store, catalog, now }: PlannerProps) {
   const [activeId, setActiveId] = useState(MAIN_COLONY_ID);
   const observatory = observatoryLevel(
@@ -142,27 +237,22 @@ export function Planner({ store, catalog, now }: PlannerProps) {
     <section className="w-full flex-1 rounded-2xl border border-white/10 p-6">
       <h2 className="mb-4 text-lg font-semibold text-white">Planner</h2>
 
-      <div role="tablist" aria-label="Colonies" className="mb-4 flex flex-wrap gap-1">
-        {COLONIES.map((colony) => {
-          const unlocked = isColonyUnlocked(colony, observatory);
-          const selected = colony.id === activeColony.id;
-          return (
-            <button
-              key={colony.id}
-              type="button"
-              role="tab"
-              aria-label={colony.name}
-              aria-selected={selected}
-              disabled={!unlocked}
-              onClick={() => setActiveId(colony.id)}
-              className={`rounded-md px-2 py-1 text-sm font-medium transition-colors disabled:cursor-not-allowed ${
-                selected ? "bg-white/12 text-[#e9e6f5]" : "text-white/40"
-              } ${unlocked ? "" : "opacity-40"}`}
-            >
-              {colony.shortName}
-            </button>
-          );
-        })}
+      <div
+        role="tablist"
+        aria-label="Colonies"
+        className="mb-4 grid grid-cols-6 gap-1 sm:grid-cols-12"
+      >
+        {COLONIES.map((colony) => (
+          <ColonyTab
+            key={colony.id}
+            colony={colony}
+            store={store}
+            catalog={catalog}
+            unlocked={isColonyUnlocked(colony, observatory)}
+            selected={colony.id === activeColony.id}
+            onSelect={() => setActiveId(colony.id)}
+          />
+        ))}
       </div>
 
       <ColonyPanel

@@ -433,7 +433,7 @@ describe("App", () => {
 
         const mine = within(screen.getByRole("group", { name: "Mine" }));
         expect(levelsOf("Mine")).toEqual(["3", "1"]);
-        expect(mine.getAllByText("/ 3")).toHaveLength(2);
+        expect(mine.getByText("Levels (max 3)")).toBeInTheDocument();
       });
 
       it("updates every limit when the Star Base level changes", async () => {
@@ -445,7 +445,7 @@ describe("App", () => {
 
         const mine = within(screen.getByRole("group", { name: "Mine" }));
         expect(mine.getByText("/ 3")).toBeInTheDocument();
-        expect(mine.getByText("/ 5")).toBeInTheDocument();
+        expect(mine.getByText("Levels (max 5)")).toBeInTheDocument();
         expect(colonyStore.get("main")?.buildings).toEqual({ mine: [3] });
       });
 
@@ -771,6 +771,92 @@ describe("App", () => {
       });
     });
 
+    describe("Colony progress", () => {
+      function progress(name: string) {
+        return within(screen.getByRole("group", { name: `${name} progress` }));
+      }
+
+      function bar(name: string) {
+        return progress(name).getByRole("progressbar");
+      }
+
+      it("shows one bar per Colony, empty without Buildings", () => {
+        renderPlanner();
+
+        expect(screen.getAllByRole("progressbar")).toHaveLength(12);
+        expect(bar("Main planet")).toHaveAttribute("aria-valuenow", "0");
+        expect(bar("Colony 5")).toHaveAttribute("aria-valuenow", "0");
+      });
+
+      it("fills with the levels reached over the maximum at the highest Star Base", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 2, { observatory: [2], mine: [5, 5, 1] });
+        renderPlanner(colonyStore);
+
+        expect(bar("Main planet")).toHaveAttribute("aria-valuenow", "30");
+      });
+
+      it("caps levels and counts at the highest Star Base limits", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, {
+          observatory: [9],
+          mine: [7, 6, 6, 6, 6],
+          cannon: [3, 3, 3],
+          laser: [3],
+        });
+        renderPlanner(colonyStore);
+
+        expect(bar("Main planet")).toHaveAttribute("aria-valuenow", "100");
+      });
+
+      it("ignores main-planet-only Building types in the other Colonies", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { observatory: [1] });
+        colonyStore.set("colony-1", {
+          starBaseLevel: 1,
+          buildings: { observatory: [6], mine: [6, 6, 6, 6] },
+          updatedAt: 1,
+        });
+        renderPlanner(colonyStore);
+
+        expect(bar("Colony 1")).toHaveAttribute("aria-valuenow", "66");
+      });
+
+      it("gives the overall progress and the progress against the current Star Base in the tooltip", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 2, { observatory: [2], mine: [5, 5, 1] });
+        renderPlanner(colonyStore);
+
+        expect(bar("Main planet")).toHaveAccessibleDescription("30% overall, 56% of Star Base 2");
+      });
+
+      it("writes the Star Base level next to the bar", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, {});
+        colonyStore.set("colony-2", { starBaseLevel: 2, buildings: {}, updatedAt: 1 });
+        renderPlanner(colonyStore);
+
+        expect(screen.getByRole("group", { name: "Main planet progress" })).toHaveTextContent(
+          "SB 3",
+        );
+        expect(screen.getByRole("group", { name: "Colony 1 progress" })).toHaveTextContent("SB 1");
+        expect(screen.getByRole("group", { name: "Colony 2 progress" })).toHaveTextContent("SB 2");
+      });
+
+      it("follows a Star Base change", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { observatory: [2], mine: [3, 3] });
+        renderPlanner(colonyStore);
+
+        await userEvent.selectOptions(starBaseSelect(), "2");
+
+        expect(screen.getByRole("group", { name: "Main planet progress" })).toHaveTextContent(
+          "SB 2",
+        );
+        expect(bar("Main planet")).toHaveAccessibleDescription("19% overall, 34% of Star Base 2");
+      });
+    });
+
     describe("Tooltips", () => {
       function tooltipCatalog(): Catalog {
         const [observatory, mine, cannon, laser] = FIXTURE_CATALOG.buildings;
@@ -867,7 +953,7 @@ describe("App", () => {
 
         function tooltipsCheckbox() {
           return within(screen.getByRole("contentinfo")).getByRole("checkbox", {
-            name: "Show tooltips",
+            name: "Show cost tooltips",
           });
         }
 
@@ -968,41 +1054,72 @@ describe("App", () => {
       it("lists one step per Building to build or upgrade with its time", () => {
         renderSteps({ observatory: [2], mine: [3, 2] });
 
-        expect(steps()).toEqual(["Upgrade Mine 2 to level 3 | 50m", "Build Cannon 1 | 5m"]);
+        expect(steps()).toEqual(["Build Cannon 1 | 5m", "Upgrade Mine 2 to level 3 | 50m"]);
       });
 
       it("shows the cost only in a tooltip, in every listed currency", () => {
         renderSteps({ observatory: [2], mine: [3, 2] });
 
-        const [upgrade, build] = stepItems();
+        const [build, upgrade] = stepItems();
         expect(within(upgrade).getByRole("tooltip")).toHaveTextContent("3,000 coins, 30 minerals");
         expect(within(build).getByRole("tooltip")).toHaveTextContent("1,000 coins, 10 minerals");
         const costs = screen.getAllByText(/coins/);
         expect(costs.every((element) => element.getAttribute("role") === "tooltip")).toBe(true);
       });
 
-      it("orders by category then time by default and by fastest on demand", async () => {
-        renderSteps({ observatory: [2], mine: [3, 2] });
-        expect(steps()).toEqual(["Upgrade Mine 2 to level 3 | 50m", "Build Cannon 1 | 5m"]);
+      it("puts builds first, fastest first by default and longest first on demand", async () => {
+        renderSteps({ observatory: [1], mine: [3, 2] });
+        expect(orderSelect()).toHaveDisplayValue("Fastest first");
+        expect(steps()).toEqual([
+          "Build Cannon 1 | 5m",
+          "Upgrade Mine 2 to level 3 | 50m",
+          "Upgrade Observatory 1 to level 2 | 2d",
+        ]);
 
-        await userEvent.selectOptions(orderSelect(), "Fastest first");
+        await userEvent.selectOptions(orderSelect(), "Longest first");
 
-        expect(steps()).toEqual(["Build Cannon 1 | 5m", "Upgrade Mine 2 to level 3 | 50m"]);
+        expect(steps()).toEqual([
+          "Build Cannon 1 | 5m",
+          "Upgrade Observatory 1 to level 2 | 2d",
+          "Upgrade Mine 2 to level 3 | 50m",
+        ]);
       });
 
-      it("says the time is unknown and sorts that step last when ordering by fastest", async () => {
-        renderSteps({ observatory: [2], mine: [3, 1] });
-        expect(steps()).toEqual([
-          "Upgrade Mine 2 to level 2 | time unknown",
-          "Build Cannon 1 | 5m",
-        ]);
-
-        await userEvent.selectOptions(orderSelect(), "Fastest first");
-
+      it("says the time is unknown and sorts that step last in both orders", async () => {
+        renderSteps({ observatory: [1], mine: [3, 1] });
         expect(steps()).toEqual([
           "Build Cannon 1 | 5m",
+          "Upgrade Observatory 1 to level 2 | 2d",
           "Upgrade Mine 2 to level 2 | time unknown",
         ]);
+
+        await userEvent.selectOptions(orderSelect(), "Longest first");
+
+        expect(steps()).toEqual([
+          "Build Cannon 1 | 5m",
+          "Upgrade Observatory 1 to level 2 | 2d",
+          "Upgrade Mine 2 to level 2 | time unknown",
+        ]);
+      });
+
+      it("keeps only the steps of the chosen category", async () => {
+        renderSteps({}, 3);
+
+        await userEvent.selectOptions(screen.getByRole("combobox", { name: "Category" }), "Tower");
+
+        expect(steps()).toEqual([
+          "Build Laser 1 | 1m",
+          "Build Cannon 1 | 5m",
+          "Build Cannon 2 | 5m",
+          "Build Cannon 3 | 5m",
+        ]);
+
+        await userEvent.selectOptions(
+          screen.getByRole("combobox", { name: "Category" }),
+          "All categories",
+        );
+
+        expect(screen.getByRole("button", { name: "Show all 9 steps" })).toBeInTheDocument();
       });
 
       it("never recommends a type the Star Base level has not unlocked", async () => {
@@ -1105,6 +1222,127 @@ describe("App", () => {
             updatedAt: NOW,
           });
         });
+      });
+    });
+
+    describe("Walls, which share one level", () => {
+      function wallsCatalog(): Catalog {
+        const [observatory] = FIXTURE_CATALOG.buildings;
+        return {
+          ...FIXTURE_CATALOG,
+          buildings: [
+            observatory,
+            {
+              ...fixtureType("walls", "Walls", "Defense", false, [
+                [3, 1],
+                [4, 2],
+                [5, 3],
+              ]),
+              sharedLevel: true,
+              levels: [
+                { level: 1, time: "0s", cost: { coins: 300 } },
+                { level: 2, time: "0s", cost: { coins: 3100 } },
+                { level: 3, time: "0s", cost: { coins: 62000, minerals: 10 } },
+              ],
+            },
+          ],
+        };
+      }
+
+      function renderWalls(walls: number[], starBase = 3) {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, starBase, { observatory: [6], walls });
+        render(
+          <App
+            store={createMemoryDropStore()}
+            auth={SIGNED_OUT_AUTH}
+            now={() => NOW}
+            colonyStore={colonyStore}
+            catalog={wallsCatalog()}
+          />,
+        );
+        return colonyStore;
+      }
+
+      function wallsLevel() {
+        return screen.getByRole("spinbutton", { name: "Walls level" });
+      }
+
+      function stepList() {
+        return within(screen.getByRole("list", { name: "Next steps" }));
+      }
+
+      it("shows one level for every Wall", () => {
+        renderWalls([2, 2, 2]);
+
+        expect(wallsLevel()).toHaveValue(2);
+        expect(
+          within(screen.getByRole("group", { name: "Walls" })).getAllByRole("spinbutton"),
+        ).toHaveLength(2);
+      });
+
+      it("raises every Wall at once", async () => {
+        const colonyStore = renderWalls([2, 2, 2]);
+
+        await click("Increase Walls level");
+
+        expect(wallsLevel()).toHaveValue(3);
+        expect(colonyStore.get("main")?.buildings.walls).toEqual([3, 3, 3]);
+      });
+
+      it("adds new Walls at the shared level", async () => {
+        const colonyStore = renderWalls([2, 2, 2]);
+
+        await click("Increase Walls owned");
+
+        expect(colonyStore.get("main")?.buildings.walls).toEqual([2, 2, 2, 2]);
+      });
+
+      it("gives the time and cost of raising every Wall to the next level", () => {
+        renderWalls([2, 2, 2]);
+
+        expect(wallsLevel()).toHaveAccessibleDescription(
+          "Next level 3 for 3 Walls: 0s, 186,000 coins, 30 minerals",
+        );
+      });
+
+      it("recommends one step to upgrade every Wall and one to build the missing ones", () => {
+        renderWalls([2, 2, 2]);
+
+        const upgrade = stepList().getByText("Upgrade 3 Walls to level 3");
+        const build = stepList().getByText("Build 2 Walls");
+        expect(stepList().getAllByRole("listitem")).toHaveLength(2);
+        expect(
+          upgrade.closest("li")?.querySelector("[aria-describedby]"),
+        ).toHaveAccessibleDescription("186,000 coins, 30 minerals");
+        expect(
+          build.closest("li")?.querySelector("[aria-describedby]"),
+        ).toHaveAccessibleDescription("6,800 coins");
+      });
+
+      it("raises every Wall when the upgrade step is done", async () => {
+        const colonyStore = renderWalls([2, 2, 2]);
+
+        await click("Done Upgrade 3 Walls to level 3");
+
+        expect(colonyStore.get("main")?.buildings.walls).toEqual([3, 3, 3]);
+      });
+
+      it("builds every missing Wall at the shared level when the build step is done", async () => {
+        const colonyStore = renderWalls([2, 2, 2]);
+
+        await click("Done Build 2 Walls");
+
+        expect(colonyStore.get("main")?.buildings.walls).toEqual([2, 2, 2, 2, 2]);
+      });
+
+      it("recommends building the first Walls at level 1", () => {
+        renderWalls([], 1);
+
+        expect(stepList().getByText("Build 3 Walls")).toBeInTheDocument();
+        expect(
+          stepList().getByText("Build 3 Walls").closest("li")?.querySelector("[aria-describedby]"),
+        ).toHaveAccessibleDescription("900 coins");
       });
     });
   });

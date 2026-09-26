@@ -56,6 +56,7 @@ describe("catalog", () => {
         expect(type.name.length).toBeGreaterThan(0);
         expect(CATEGORIES).toContain(type.category);
         expect(typeof type.mainOnly).toBe("boolean");
+        expect(["undefined", "boolean"]).toContain(typeof type.sharedLevel);
       }
     });
 
@@ -110,6 +111,30 @@ describe("catalog", () => {
           expect(Object.keys(entry.cost).length).toBeGreaterThan(0);
         }
       }
+    });
+
+    it("gives Walls one shared level, six levels and the Star Base limits of the wiki", () => {
+      const walls = CATALOG.buildings.find((type) => type.id === "walls");
+      expect(walls?.sharedLevel).toBe(true);
+      expect(walls?.levels).toEqual([
+        { level: 1, time: "0s", cost: { coins: 300 } },
+        { level: 2, time: "0s", cost: { coins: 3100 } },
+        { level: 3, time: "0s", cost: { coins: 62000 } },
+        { level: 4, time: "0s", cost: { coins: 124000 } },
+        { level: 5, time: "0s", cost: { coins: 248000 } },
+        { level: 6, time: "0s", cost: { coins: 300000, minerals: 100 } },
+      ]);
+      expect(walls?.unlocks.map(({ maxCount, maxLevel }) => [maxCount, maxLevel])).toEqual([
+        [0, 0],
+        [30, 1],
+        [60, 2],
+        [120, 3],
+        [200, 4],
+        [220, 5],
+        [280, 5],
+        [300, 6],
+        [300, 6],
+      ]);
     });
 
     it("keeps the Observatory on the main planet only", () => {

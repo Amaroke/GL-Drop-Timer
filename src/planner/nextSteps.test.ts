@@ -100,13 +100,13 @@ describe("parseDuration", () => {
 
 describe("nextSteps", () => {
   it("yields one build step at level 1 per missing instance", () => {
-    const steps = nextSteps(CATALOG, "colony-1", 1, { mine: [3] }, "category");
+    const steps = nextSteps(CATALOG, "colony-1", 1, { mine: [3] }, "fastest");
 
     expect(labels(steps.filter((step) => step.typeId === "mine"))).toEqual(["build:mine:2:1"]);
   });
 
   it("yields one build step per instance when a whole type is missing", () => {
-    const steps = nextSteps(CATALOG, "colony-1", 1, {}, "category");
+    const steps = nextSteps(CATALOG, "colony-1", 1, {}, "fastest");
 
     expect(labels(steps.filter((step) => step.typeId === "mine"))).toEqual([
       "build:mine:1:1",
@@ -115,14 +115,14 @@ describe("nextSteps", () => {
   });
 
   it("yields an upgrade step to the next level for each Building Below limit", () => {
-    const steps = nextSteps(CATALOG, "colony-1", 1, { mine: [3, 1], cannon: [3] }, "category");
+    const steps = nextSteps(CATALOG, "colony-1", 1, { mine: [3, 1], cannon: [3] }, "fastest");
 
     expect(labels(steps)).toContain("upgrade:mine:2:2");
     expect(labels(steps.filter((step) => step.typeId === "cannon"))).toEqual([]);
   });
 
   it("takes the time and the cost of the target level from the catalog", () => {
-    const [step] = nextSteps(CATALOG, "colony-1", 1, { mine: [3, 1] }, "category").filter(
+    const [step] = nextSteps(CATALOG, "colony-1", 1, { mine: [3, 1] }, "fastest").filter(
       (candidate) => candidate.typeId === "mine",
     );
 
@@ -130,51 +130,63 @@ describe("nextSteps", () => {
   });
 
   it("never recommends a type that the Star Base level has not unlocked", () => {
-    const steps = nextSteps(CATALOG, "colony-1", 1, {}, "category");
+    const steps = nextSteps(CATALOG, "colony-1", 1, {}, "fastest");
 
     expect(steps.map((step) => step.typeId)).not.toContain("laser");
-    expect(nextSteps(CATALOG, "colony-1", 2, {}, "category").map((step) => step.typeId)).toContain(
+    expect(nextSteps(CATALOG, "colony-1", 2, {}, "fastest").map((step) => step.typeId)).toContain(
       "laser",
     );
   });
 
   it("never recommends a main planet type on another Colony", () => {
-    expect(nextSteps(CATALOG, "colony-1", 1, {}, "category").map((s) => s.typeId)).not.toContain(
+    expect(nextSteps(CATALOG, "colony-1", 1, {}, "fastest").map((s) => s.typeId)).not.toContain(
       "observatory",
     );
-    expect(nextSteps(CATALOG, "main", 1, {}, "category").map((s) => s.typeId)).toContain(
+    expect(nextSteps(CATALOG, "main", 1, {}, "fastest").map((s) => s.typeId)).toContain(
       "observatory",
     );
   });
 
   it("never recommends anything for Over limit Buildings", () => {
-    const steps = nextSteps(CATALOG, "colony-1", 1, { mine: [3, 3, 1], cannon: [5] }, "category");
+    const steps = nextSteps(CATALOG, "colony-1", 1, { mine: [3, 3, 1], cannon: [5] }, "fastest");
 
     expect(steps.filter((step) => step.typeId === "mine")).toEqual([]);
     expect(steps.filter((step) => step.typeId === "cannon")).toEqual([]);
   });
 
-  it("orders by category then by time", () => {
-    const steps = nextSteps(CATALOG, "colony-1", 1, { mine: [1, 1] }, "category");
+  it("puts every build step before the upgrade steps", () => {
+    const steps = nextSteps(CATALOG, "colony-1", 1, { mine: [1, 1] }, "fastest");
 
     expect(labels(steps)).toEqual([
-      "upgrade:mine:1:2",
-      "upgrade:mine:2:2",
       "build:barracks:1:1",
       "build:cannon:1:1",
+      "upgrade:mine:1:2",
+      "upgrade:mine:2:2",
+    ]);
+    expect(labels(nextSteps(CATALOG, "colony-1", 1, { mine: [1, 1] }, "longest"))).toEqual([
+      "build:cannon:1:1",
+      "build:barracks:1:1",
+      "upgrade:mine:1:2",
+      "upgrade:mine:2:2",
     ]);
   });
 
-  it("orders by category then by time inside a category", () => {
-    const steps = nextSteps(CATALOG, "colony-1", 2, {}, "category");
+  it("orders by longest across categories", () => {
+    const steps = nextSteps(CATALOG, "colony-1", 2, {}, "longest");
 
     expect(labels(steps)).toEqual([
+      "build:cannon:1:1",
       "build:mine:1:1",
       "build:mine:2:1",
       "build:barracks:1:1",
       "build:laser:1:1",
-      "build:cannon:1:1",
     ]);
+  });
+
+  it("keeps only the steps of one category", () => {
+    const steps = nextSteps(CATALOG, "colony-1", 2, {}, "fastest", "Tower");
+
+    expect(labels(steps)).toEqual(["build:laser:1:1", "build:cannon:1:1"]);
   });
 
   it("orders by fastest across categories", () => {
@@ -197,7 +209,7 @@ describe("nextSteps", () => {
     expect(steps[steps.length - 1]).toBe(unknown);
   });
 
-  it("sorts a step with an unknown time last inside its category", () => {
+  it("sorts a step with an unknown time last when ordering by longest", () => {
     const unknownFirst: Catalog = {
       ...CATALOG,
       buildings: [
@@ -206,7 +218,7 @@ describe("nextSteps", () => {
       ],
     };
 
-    expect(labels(nextSteps(unknownFirst, "main", 1, {}, "category"))).toEqual([
+    expect(labels(nextSteps(unknownFirst, "main", 1, {}, "longest"))).toEqual([
       "build:quick:1:1",
       "build:slow:1:1",
     ]);
@@ -230,7 +242,7 @@ describe("nextSteps", () => {
       buildings: [type("mine", "Resource", [[1, 3]], ["1m"])],
     };
 
-    const steps = nextSteps(short, "main", 1, { mine: [1] }, "category");
+    const steps = nextSteps(short, "main", 1, { mine: [1] }, "fastest");
 
     expect(steps[0]).toMatchObject({ targetLevel: 2, time: null, seconds: null, cost: {} });
   });
@@ -254,9 +266,9 @@ describe("nextSteps", () => {
       "build:costly:1:1",
       "build:cheap:1:1",
     ]);
-    expect(labels(nextSteps(priced, "main", 1, {}, "category"))).toEqual([
-      "build:costly:1:1",
+    expect(labels(nextSteps(priced, "main", 1, {}, "longest"))).toEqual([
       "build:cheap:1:1",
+      "build:costly:1:1",
     ]);
   });
 });

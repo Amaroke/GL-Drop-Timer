@@ -108,7 +108,7 @@ function App({ store, auth, now, colonyStore, catalog = CATALOG }: AppProps) {
             checked={tooltipsEnabled}
             onChange={(event) => setTooltipsEnabled(event.target.checked)}
           />
-          Show tooltips
+          Show cost tooltips
         </label>
       </footer>
     </div>

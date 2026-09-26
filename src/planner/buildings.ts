@@ -31,6 +31,19 @@ export function withCount(levels: number[], count: number): number[] {
   return [...levels, ...Array<number>(count - levels.length).fill(MIN_LEVEL)];
 }
 
+export function sharedLevel(levels: number[]): number {
+  return levels[0] ?? MIN_LEVEL;
+}
+
+export function withSharedCount(levels: number[], count: number): number[] {
+  if (count <= levels.length) return levels.slice(0, count);
+  return [...levels, ...Array<number>(count - levels.length).fill(sharedLevel(levels))];
+}
+
+export function withSharedLevel(levels: number[], level: number): number[] {
+  return levels.map(() => level);
+}
+
 export function withLevel(levels: number[], index: number, level: number): number[] {
   return levels.map((current, i) => (i === index ? level : current)).sort((a, b) => b - a);
 }
