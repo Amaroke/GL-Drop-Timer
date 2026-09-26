@@ -1,7 +1,8 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { BuildingsList } from "./BuildingsList";
 import { NextSteps } from "./NextSteps";
-import { groupedBuildingsForColony } from "../planner/buildings";
+import { groupedBuildingsForColony, withCount, withLevel } from "../planner/buildings";
+import type { NextStep } from "../planner/nextSteps";
 import { filterToUpgrade } from "../planner/statuses";
 import type { Catalog } from "../planner/catalog";
 import {
@@ -43,6 +44,20 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
     store.set(colony.id, { starBaseLevel, buildings, ...changes, updatedAt: now() });
   }
 
+  function saveLevels(typeId: string, levels: number[]) {
+    save({ buildings: { ...buildings, [typeId]: levels } });
+  }
+
+  function applyStep(step: NextStep) {
+    const levels = buildings[step.typeId] ?? [];
+    saveLevels(
+      step.typeId,
+      step.kind === "build"
+        ? withCount(levels, levels.length + 1)
+        : withLevel(levels, step.instance - 1, step.targetLevel),
+    );
+  }
+
   return (
     <div role="tabpanel" aria-label={colony.name}>
       <div className="flex items-center gap-3">
@@ -76,13 +91,14 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
         colonyId={colony.id}
         starBaseLevel={starBaseLevel}
         buildings={buildings}
+        onDone={applyStep}
       />
 
       <BuildingsList
         groups={groups}
         starBaseLevel={starBaseLevel}
         buildings={buildings}
-        onChange={(typeId, levels) => save({ buildings: { ...buildings, [typeId]: levels } })}
+        onChange={saveLevels}
       />
     </div>
   );
