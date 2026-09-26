@@ -1,6 +1,7 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { BuildingsList } from "./BuildingsList";
 import { groupedBuildingsForColony } from "../planner/buildings";
+import { filterToUpgrade } from "../planner/statuses";
 import type { Catalog } from "../planner/catalog";
 import {
   COLONIES,
@@ -32,7 +33,9 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
   const entry = useColonyEntry(store, colony.id);
   const starBaseLevel = entry?.starBaseLevel ?? DEFAULT_STAR_BASE_LEVEL;
   const buildings = entry?.buildings ?? NO_BUILDINGS;
-  const groups = groupedBuildingsForColony(catalog, colony.id);
+  const [onlyToUpgrade, setOnlyToUpgrade] = useState(false);
+  const allGroups = groupedBuildingsForColony(catalog, colony.id);
+  const groups = onlyToUpgrade ? filterToUpgrade(allGroups, starBaseLevel, buildings) : allGroups;
   const selectId = `star-base-level-${colony.id}`;
 
   function save(changes: { starBaseLevel?: number; buildings?: ColonyBuildings }) {
@@ -57,6 +60,14 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
             </option>
           ))}
         </select>
+        <label className="ml-auto flex items-center gap-2 text-sm text-white/60">
+          <input
+            type="checkbox"
+            checked={onlyToUpgrade}
+            onChange={(event) => setOnlyToUpgrade(event.target.checked)}
+          />
+          Only what to upgrade
+        </label>
       </div>
 
       <BuildingsList
