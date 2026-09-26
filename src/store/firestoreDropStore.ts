@@ -9,7 +9,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { isDropEntry, type DropEntry, type DropStore } from "./dropStore";
-import { createNotifier } from "./pubSub";
+import type { SendScheduler, SyncStatusStore } from "./sendScheduler";
 
 export function createAppFirestore(app: FirebaseApp): Firestore {
   return initializeFirestore(app, {
@@ -17,14 +17,10 @@ export function createAppFirestore(app: FirebaseApp): Firestore {
   });
 }
 
-export type SyncStatus = "synced" | "syncing" | "offline" | "error";
-
-export type SyncStatusStore = {
-  getStatus(): SyncStatus;
-  subscribe(onChange: () => void): () => void;
+export type FirestoreDropStore = DropStore & {
+  syncStatus: SyncStatusStore;
+  dispose(): void;
 };
-
-export type FirestoreDropStore = DropStore & { syncStatus: SyncStatusStore };
 
 const TRANSIENT_ERROR_CODES = new Set(["unavailable", "deadline-exceeded", "cancelled"]);
 
@@ -33,55 +29,27 @@ function isTransientError(error: unknown): boolean {
   return code !== undefined && TRANSIENT_ERROR_CODES.has(code);
 }
 
-function createOnlineWatcher() {
-  let isOnline = typeof navigator?.onLine === "boolean" ? navigator.onLine : true;
-  const notifier = createNotifier<boolean>();
-  if (typeof window !== "undefined") {
-    window.addEventListener("online", () => {
-      isOnline = true;
-      notifier.notify(true);
-    });
-    window.addEventListener("offline", () => {
-      isOnline = false;
-      notifier.notify(false);
-    });
-  }
-  return {
-    getIsOnline: () => isOnline,
-    subscribe: notifier.subscribe,
-  };
-}
-
-const onlineWatcher = createOnlineWatcher();
-
-export function createFirestoreDropStore(db: Firestore, uid: string): FirestoreDropStore {
+export function createFirestoreDropStore(
+  db: Firestore,
+  uid: string,
+  scheduler: SendScheduler,
+): FirestoreDropStore {
   const cache = new Map<string, DropEntry | null>();
+  const pending = new Map<string, DropEntry>();
   const listeners = new Map<string, Set<() => void>>();
   const unwatchers = new Map<string, () => void>();
 
-  let pendingWrites = 0;
-  let hasError = false;
-  let isOnline = onlineWatcher.getIsOnline();
-  const statusNotifier = createNotifier();
-
-  function computeStatus(): SyncStatus {
-    if (!isOnline) return "offline";
-    if (hasError) return "error";
-    if (pendingWrites > 0) return "syncing";
-    return "synced";
-  }
-
-  let status = computeStatus();
-  function notifyStatus() {
-    const next = computeStatus();
-    if (next === status) return;
-    status = next;
-    statusNotifier.notify();
-  }
-
-  onlineWatcher.subscribe((online) => {
-    isOnline = online;
-    notifyStatus();
+  const unregister = scheduler.register({
+    hasPending: () => pending.size > 0,
+    async send() {
+      const batch = new Map(pending);
+      await Promise.all(
+        [...batch].map(([key, entry]) => setDoc(doc(db, "users", uid, "drops", key), entry)),
+      );
+      batch.forEach((entry, key) => {
+        if (pending.get(key) === entry) pending.delete(key);
+      });
+    },
   });
 
   function ensureWatched(key: string) {
@@ -90,16 +58,17 @@ export function createFirestoreDropStore(db: Firestore, uid: string): FirestoreD
       doc(db, "users", uid, "drops", key),
       (snapshot) => {
         const data = snapshot.data();
-        cache.set(key, isDropEntry(data) ? data : null);
-        hasError = false;
-        notifyStatus();
+        const remote = isDropEntry(data) ? data : null;
+        const local = pending.get(key);
+        scheduler.setReadFailed(false);
+        if (local && (!remote || remote.updatedAt < local.updatedAt)) return;
+        if (local) pending.delete(key);
+        cache.set(key, remote);
+        scheduler.changed();
         listeners.get(key)?.forEach((onChange) => onChange());
       },
       (error) => {
-        if (!isTransientError(error)) {
-          hasError = true;
-          notifyStatus();
-        }
+        if (!isTransientError(error)) scheduler.setReadFailed(true);
       },
     );
     unwatchers.set(key, unwatch);
@@ -111,21 +80,11 @@ export function createFirestoreDropStore(db: Firestore, uid: string): FirestoreD
       return cache.get(key) ?? null;
     },
     set(key, readyAt, updatedAt) {
-      cache.set(key, { readyAt, updatedAt });
+      const entry = { readyAt, updatedAt };
+      cache.set(key, entry);
+      pending.set(key, entry);
       listeners.get(key)?.forEach((onChange) => onChange());
-      pendingWrites += 1;
-      notifyStatus();
-      setDoc(doc(db, "users", uid, "drops", key), { readyAt, updatedAt })
-        .then(() => {
-          hasError = false;
-        })
-        .catch((error: unknown) => {
-          if (!isTransientError(error)) hasError = true;
-        })
-        .finally(() => {
-          pendingWrites -= 1;
-          notifyStatus();
-        });
+      scheduler.changed();
     },
     subscribe(key, onChange) {
       ensureWatched(key);
@@ -140,9 +99,12 @@ export function createFirestoreDropStore(db: Firestore, uid: string): FirestoreD
         unwatchers.delete(key);
       };
     },
-    syncStatus: {
-      getStatus: () => status,
-      subscribe: statusNotifier.subscribe,
+    syncStatus: scheduler.syncStatus,
+    dispose() {
+      unregister();
+      unwatchers.forEach((unwatch) => unwatch());
+      unwatchers.clear();
+      scheduler.dispose();
     },
   };
 }

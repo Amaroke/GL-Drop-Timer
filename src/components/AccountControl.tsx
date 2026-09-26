@@ -3,7 +3,8 @@ import { useAuth } from "../auth/useAuth";
 import { PILL_BASE_CLASSES } from "../config/pillStyles";
 import { useSyncStatus } from "../hooks/useSyncStatus";
 import type { DropStore } from "../store/dropStore";
-import type { SyncStatus } from "../store/firestoreDropStore";
+import { formatClockTime } from "../lib/dateFormat";
+import type { SyncStatus } from "../store/sendScheduler";
 
 type AccountControlProps = {
   auth: AuthService;
@@ -12,34 +13,44 @@ type AccountControlProps = {
 
 const PILL_CLASSES = `${PILL_BASE_CLASSES} text-white transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50`;
 
-const SYNC_STATUS_PRESENTATION: Record<
-  Exclude<SyncStatus, "synced">,
-  { label: string; dotClass: string }
-> = {
-  syncing: { label: "Syncing…", dotClass: "bg-sky-400 animate-pulse" },
-  offline: {
-    label: "Offline — changes will sync once you're back online",
-    dotClass: "bg-white/40",
-  },
-  error: { label: "Sync failed", dotClass: "bg-red-400" },
+const DOT_CLASSES: Record<SyncStatus, string> = {
+  synced: "bg-emerald-400",
+  sending: "bg-amber-400 animate-pulse",
+  pending: "bg-red-400",
+  offline: "bg-red-400",
+  error: "bg-red-400",
 };
 
-function SyncStatusDot({ status }: { status: SyncStatus }) {
-  if (status === "synced") return null;
-  const { label, dotClass } = SYNC_STATUS_PRESENTATION[status];
+function syncLabel(status: SyncStatus, nextSendAt: number | null): string {
+  const next = nextSendAt === null ? null : formatClockTime(nextSendAt);
+  switch (status) {
+    case "synced":
+      return "Synced";
+    case "sending":
+      return "Sending…";
+    case "pending":
+      return next ? `Not synced yet, next send at ${next}` : "Not synced yet";
+    case "offline":
+      return "Offline, changes will be sent once you're back online";
+    case "error":
+      return next ? `Sync failed, next attempt at ${next}` : "Sync failed";
+  }
+}
+
+function SyncStatusDot({ status, label }: { status: SyncStatus; label: string }) {
   return (
     <span
       role="status"
       title={label}
       aria-label={label}
-      className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`}
+      className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT_CLASSES[status]}`}
     />
   );
 }
 
 export function AccountControl({ auth, store }: AccountControlProps) {
   const state = useAuth(auth);
-  const syncStatus = useSyncStatus(store);
+  const { status: syncStatus, nextSendAt, saveNow } = useSyncStatus(store);
 
   if (state.status === "restoring") return null;
 
@@ -49,7 +60,18 @@ export function AccountControl({ auth, store }: AccountControlProps) {
       <div className="flex min-w-0 items-center overflow-hidden rounded-full border border-white/10 bg-white/6 text-xs font-medium text-white">
         <span className="flex min-w-0 items-center gap-1.5 py-2 pr-2 pl-3.5">
           <span className="max-w-32 truncate">{label}</span>
-          {syncStatus && <SyncStatusDot status={syncStatus} />}
+          {syncStatus && (
+            <SyncStatusDot status={syncStatus} label={syncLabel(syncStatus, nextSendAt)} />
+          )}
+          {syncStatus && !["synced", "sending"].includes(syncStatus) && (
+            <button
+              type="button"
+              onClick={saveNow}
+              className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+            >
+              Save now
+            </button>
+          )}
         </span>
         <span className="w-px shrink-0 self-stretch bg-white/15" aria-hidden="true" />
         <button

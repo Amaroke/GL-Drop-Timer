@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onSnapshot, setDoc } from "firebase/firestore";
 import { createFirestoreDropStore } from "./firestoreDropStore";
+import { createSendScheduler } from "./sendScheduler";
 
 vi.mock("firebase/firestore", () => ({
   doc: vi.fn((_db: unknown, ...segments: string[]) => ({ path: segments.join("/") })),
@@ -23,8 +24,16 @@ function deferred<T>() {
 
 const FAKE_DB = {} as never;
 
+const createdStores: { dispose(): void }[] = [];
+
+function createStore() {
+  const store = createFirestoreDropStore(FAKE_DB, "player-1", createSendScheduler());
+  createdStores.push(store);
+  return store;
+}
+
 async function flush() {
-  for (let i = 0; i < 5; i += 1) await Promise.resolve();
+  for (let i = 0; i < 20; i += 1) await Promise.resolve();
 }
 
 describe("createFirestoreDropStore sync status", () => {
@@ -35,21 +44,26 @@ describe("createFirestoreDropStore sync status", () => {
   });
 
   afterEach(() => {
+    createdStores.splice(0).forEach((store) => store.dispose());
     vi.restoreAllMocks();
   });
 
   it("starts synced when nothing is pending", () => {
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
+    const store = createStore();
     expect(store.syncStatus.getStatus()).toBe("synced");
   });
 
-  it("reports syncing while a write is in flight, then synced once it resolves", async () => {
+  it("keeps a change pending until it is sent, then reports sending and synced", async () => {
     const write = deferred<void>();
     vi.mocked(setDoc).mockReturnValueOnce(write.promise);
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
+    const store = createStore();
 
     store.set("gl-timer-star-battery", 1000, 500);
-    expect(store.syncStatus.getStatus()).toBe("syncing");
+    expect(store.syncStatus.getStatus()).toBe("pending");
+    expect(setDoc).not.toHaveBeenCalled();
+
+    store.syncStatus.saveNow();
+    expect(store.syncStatus.getStatus()).toBe("sending");
 
     write.resolve();
     await flush();
@@ -57,51 +71,34 @@ describe("createFirestoreDropStore sync status", () => {
     expect(store.syncStatus.getStatus()).toBe("synced");
   });
 
-  it("reports error when a write fails with a non-transient error", async () => {
-    const write = deferred<void>();
-    vi.mocked(setDoc).mockReturnValueOnce(write.promise);
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
+  it("reports error when a send fails", async () => {
+    vi.mocked(setDoc).mockRejectedValueOnce({ code: "permission-denied" });
+    const store = createStore();
 
     store.set("gl-timer-star-battery", 1000, 500);
-    write.reject({ code: "permission-denied" });
+    store.syncStatus.saveNow();
     await flush();
 
     expect(store.syncStatus.getStatus()).toBe("error");
   });
 
-  it("does not treat a transient write failure as an error", async () => {
-    const write = deferred<void>();
-    vi.mocked(setDoc).mockReturnValueOnce(write.promise);
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
-
+  it("clears a previous error once a later send succeeds", async () => {
+    vi.mocked(setDoc).mockRejectedValueOnce({ code: "permission-denied" });
+    const store = createStore();
     store.set("gl-timer-star-battery", 1000, 500);
-    write.reject({ code: "unavailable" });
-    await flush();
-
-    expect(store.syncStatus.getStatus()).toBe("synced");
-  });
-
-  it("clears a previous error once a later write succeeds", async () => {
-    const failingWrite = deferred<void>();
-    vi.mocked(setDoc).mockReturnValueOnce(failingWrite.promise);
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
-
-    store.set("gl-timer-star-battery", 1000, 500);
-    failingWrite.reject({ code: "permission-denied" });
+    store.syncStatus.saveNow();
     await flush();
     expect(store.syncStatus.getStatus()).toBe("error");
 
-    const okWrite = deferred<void>();
-    vi.mocked(setDoc).mockReturnValueOnce(okWrite.promise);
-    store.set("gl-timer-star-battery", 2000, 600);
-    okWrite.resolve();
+    store.syncStatus.saveNow();
     await flush();
 
     expect(store.syncStatus.getStatus()).toBe("synced");
   });
 
-  it("reports offline when the browser loses connectivity, and recovers when it returns", () => {
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
+  it("reports offline while changes wait for connectivity, and sends them when it returns", async () => {
+    const store = createStore();
+    store.set("gl-timer-star-battery", 1000, 500);
 
     Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
     window.dispatchEvent(new Event("offline"));
@@ -109,6 +106,18 @@ describe("createFirestoreDropStore sync status", () => {
 
     Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
     window.dispatchEvent(new Event("online"));
+    await flush();
+
+    expect(setDoc).toHaveBeenCalledTimes(1);
+    expect(store.syncStatus.getStatus()).toBe("synced");
+  });
+
+  it("stays synced while offline with nothing to send", () => {
+    const store = createStore();
+
+    Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+    window.dispatchEvent(new Event("offline"));
+
     expect(store.syncStatus.getStatus()).toBe("synced");
   });
 
@@ -118,7 +127,7 @@ describe("createFirestoreDropStore sync status", () => {
       errorCallback = args[2] as (error: unknown) => void;
       return vi.fn();
     });
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
+    const store = createStore();
     store.get("gl-timer-star-battery");
 
     errorCallback?.({ code: "permission-denied" });
@@ -132,7 +141,7 @@ describe("createFirestoreDropStore sync status", () => {
       errorCallback = args[2] as (error: unknown) => void;
       return vi.fn();
     });
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
+    const store = createStore();
     store.get("gl-timer-star-battery");
     expect(onSnapshot).toHaveBeenCalledTimes(1);
 
@@ -151,7 +160,7 @@ describe("createFirestoreDropStore sync status", () => {
       errorCallback = args[2] as (error: unknown) => void;
       return vi.fn();
     });
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
+    const store = createStore();
     store.get("gl-timer-star-battery");
     errorCallback?.({ code: "permission-denied" });
     expect(store.syncStatus.getStatus()).toBe("error");
@@ -164,16 +173,32 @@ describe("createFirestoreDropStore sync status", () => {
   it("notifies subscribers only when the status actually changes", async () => {
     const write = deferred<void>();
     vi.mocked(setDoc).mockReturnValueOnce(write.promise);
-    const store = createFirestoreDropStore(FAKE_DB, "player-1");
+    const store = createStore();
     const onChange = vi.fn();
     store.syncStatus.subscribe(onChange);
 
     store.set("gl-timer-star-battery", 1000, 500);
+    store.set("gl-timer-star-battery", 2000, 600);
     expect(onChange).toHaveBeenCalledTimes(1);
 
+    store.syncStatus.saveNow();
     write.resolve();
     await flush();
 
-    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(onChange).toHaveBeenCalledTimes(3);
+  });
+
+  it("stops listening and sending once disposed", () => {
+    const unwatch = vi.fn();
+    vi.mocked(onSnapshot).mockReturnValue(unwatch);
+    const store = createStore();
+    store.get("gl-timer-star-battery");
+    store.set("gl-timer-star-battery", 1000, 500);
+
+    store.dispose();
+    store.syncStatus.saveNow();
+
+    expect(unwatch).toHaveBeenCalledTimes(1);
+    expect(setDoc).not.toHaveBeenCalled();
   });
 });
