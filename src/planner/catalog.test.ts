@@ -1,17 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { CATALOG, type Cost } from "./catalog";
+import { CATALOG } from "./catalog";
 
 const DURATION = /^(\d+[wdhms])( \d+[wdhms])*$/;
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const CATEGORIES = ["Resource", "Military", "Tower", "Defense"];
-
-function assertNonNegativeCost(cost: Cost) {
-  for (const [currency, amount] of Object.entries(cost)) {
-    expect(currency).toMatch(/^[a-zA-Z]+$/);
-    expect(Number.isFinite(amount)).toBe(true);
-    expect(amount).toBeGreaterThanOrEqual(0);
-  }
-}
 
 function assertTimeParseable(time: string | null) {
   if (time === null) return;
@@ -31,11 +23,10 @@ describe("catalog", () => {
       });
     });
 
-    it("has a parseable time and a non-negative cost for every level", () => {
+    it("has a parseable time for every level", () => {
       for (const entry of CATALOG.starBase) {
         assertTimeParseable(entry.time);
-        assertNonNegativeCost(entry.cost);
-        assertNonNegativeCost(entry.requirements);
+        expect(Object.keys(entry)).toEqual(["level", "time"]);
       }
     });
   });
@@ -98,7 +89,7 @@ describe("catalog", () => {
       }
     });
 
-    it("has a time and cost entry for every level up to the maximum level", () => {
+    it("has a time entry for every level up to the maximum level", () => {
       for (const type of CATALOG.buildings) {
         const highestMaxLevel = Math.max(...type.unlocks.map((unlock) => unlock.maxLevel));
         expect(type.levels.map((entry) => entry.level)).toEqual(
@@ -107,8 +98,7 @@ describe("catalog", () => {
         expect(type.levels.length).toBeGreaterThanOrEqual(highestMaxLevel);
         for (const entry of type.levels) {
           assertTimeParseable(entry.time);
-          assertNonNegativeCost(entry.cost);
-          expect(Object.keys(entry.cost).length).toBeGreaterThan(0);
+          expect(Object.keys(entry)).toEqual(["level", "time"]);
         }
       }
     });
@@ -117,12 +107,12 @@ describe("catalog", () => {
       const walls = CATALOG.buildings.find((type) => type.id === "walls");
       expect(walls?.sharedLevel).toBe(true);
       expect(walls?.levels).toEqual([
-        { level: 1, time: "0s", cost: { coins: 300 } },
-        { level: 2, time: "0s", cost: { coins: 3100 } },
-        { level: 3, time: "0s", cost: { coins: 62000 } },
-        { level: 4, time: "0s", cost: { coins: 124000 } },
-        { level: 5, time: "0s", cost: { coins: 248000 } },
-        { level: 6, time: "0s", cost: { coins: 300000, minerals: 100 } },
+        { level: 1, time: "0s" },
+        { level: 2, time: "0s" },
+        { level: 3, time: "0s" },
+        { level: 4, time: "0s" },
+        { level: 5, time: "0s" },
+        { level: 6, time: "0s" },
       ]);
       expect(walls?.unlocks.map(({ maxCount, maxLevel }) => [maxCount, maxLevel])).toEqual([
         [0, 0],

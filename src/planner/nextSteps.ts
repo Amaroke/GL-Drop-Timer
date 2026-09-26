@@ -1,12 +1,5 @@
 import { limitsAt, groupedBuildingsForColony, sharedLevel } from "./buildings";
-import {
-  addCosts,
-  scaleCost,
-  type BuildingType,
-  type Catalog,
-  type Category,
-  type Cost,
-} from "./catalog";
+import type { BuildingType, Catalog, Category } from "./catalog";
 import { instanceStatus } from "./statuses";
 import type { ColonyBuildings } from "../store/colonyStore";
 
@@ -23,7 +16,6 @@ export type NextStep = {
   targetLevel: number;
   time: string | null;
   seconds: number | null;
-  cost: Cost;
 };
 
 const UNIT_SECONDS: Record<string, number> = {
@@ -72,7 +64,6 @@ function stepFor(
     targetLevel,
     time,
     seconds: parseDuration(time),
-    cost: info?.cost ?? {},
   };
 }
 
@@ -114,10 +105,6 @@ function sharedStep(
     targetLevel,
     time: seconds === null ? null : formatDuration(seconds),
     seconds,
-    cost: scaleCost(
-      infos.reduce<Cost>((sum, entry) => addCosts(sum, entry.cost), {}),
-      count,
-    ),
   };
 }
 

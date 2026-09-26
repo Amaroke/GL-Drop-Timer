@@ -3,97 +3,39 @@
   "starBase": [
     {
       "level": 1,
-      "time": null,
-      "cost": {},
-      "requirements": {}
+      "time": null
     },
     {
       "level": 2,
-      "time": "10m",
-      "cost": {
-        "coins": 4340
-      },
-      "requirements": {}
+      "time": "10m"
     },
     {
       "level": 3,
-      "time": "4h",
-      "cost": {
-        "coins": 26040
-      },
-      "requirements": {
-        "starBattery": 1
-      }
+      "time": "4h"
     },
     {
       "level": 4,
-      "time": "16h",
-      "cost": {
-        "coins": 148800
-      },
-      "requirements": {
-        "starBattery": 3
-      }
+      "time": "16h"
     },
     {
       "level": 5,
-      "time": "2d",
-      "cost": {
-        "coins": 3016600
-      },
-      "requirements": {
-        "starBattery": 4,
-        "manaLight": 1,
-        "colonies": 2
-      }
+      "time": "2d"
     },
     {
       "level": 6,
-      "time": "4d",
-      "cost": {
-        "coins": 22551200
-      },
-      "requirements": {
-        "starBattery": 6,
-        "manaLight": 2,
-        "colonies": 3
-      }
+      "time": "4d"
     },
     {
       "level": 7,
-      "time": "6d",
-      "cost": {
-        "coins": 42758800
-      },
-      "requirements": {
-        "starBattery": 9,
-        "manaLight": 3,
-        "colonies": 5
-      }
+      "time": "6d"
     },
     {
       "level": 8,
-      "time": "8d",
-      "cost": {
-        "coins": 80396400
-      },
-      "requirements": {
-        "starBattery": 12,
-        "manaLight": 5,
-        "colonies": 6
-      }
+      "time": "8d"
     },
     {
       "level": 9,
-      "time": "1w 5d",
-      "cost": {
-        "coins": 121000000
-      },
-      "requirements": {
-        "starBattery": 15,
-        "manaLight": 8,
-        "colonies": 7
-      }
+      "time": "1w 5d"
     }
   ],
   "buildings": [
@@ -152,90 +94,47 @@
       "levels": [
         {
           "level": 1,
-          "time": "2d",
-          "cost": {
-            "coins": 750000
-          }
+          "time": "2d"
         },
         {
           "level": 2,
-          "time": "3d",
-          "cost": {
-            "coins": 1050000,
-            "minerals": 525000
-          }
+          "time": "3d"
         },
         {
           "level": 3,
-          "time": "4d 12h",
-          "cost": {
-            "coins": 1575000,
-            "minerals": 787500
-          }
+          "time": "4d 12h"
         },
         {
           "level": 4,
-          "time": "6d 18h",
-          "cost": {
-            "coins": 2362500,
-            "minerals": 1182000
-          }
+          "time": "6d 18h"
         },
         {
           "level": 5,
-          "time": "1w 3d 3h",
-          "cost": {
-            "coins": 3545000,
-            "minerals": 1773000
-          }
+          "time": "1w 3d 3h"
         },
         {
           "level": 6,
-          "time": "2w 1d 4h",
-          "cost": {
-            "coins": 5381000,
-            "minerals": 2659000
-          }
+          "time": "2w 1d 4h"
         },
         {
           "level": 7,
-          "time": "2w 4d 5h",
-          "cost": {
-            "coins": 9570000,
-            "minerals": 4785000
-          }
+          "time": "2w 4d 5h"
         },
         {
           "level": 8,
-          "time": "3w 20h",
-          "cost": {
-            "coins": 17225000,
-            "minerals": 8613000
-          }
+          "time": "3w 20h"
         },
         {
           "level": 9,
-          "time": "3w 5d 5h",
-          "cost": {
-            "coins": 31000000,
-            "minerals": 15500000
-          }
+          "time": "3w 5d 5h"
         },
         {
           "level": 10,
-          "time": "4w 3d 11h",
-          "cost": {
-            "coins": 55800000,
-            "minerals": 27900000
-          }
+          "time": "4w 3d 11h"
         },
         {
           "level": 11,
-          "time": "5w 2d 19h",
-          "cost": {
-            "coins": 100000000,
-            "minerals": 50000000
-          }
+          "time": "5w 2d 19h"
         }
       ]
     },
@@ -294,80 +193,47 @@
       "levels": [
         {
           "level": 1,
-          "time": "22s",
-          "cost": {
-            "coins": 360
-          }
+          "time": "22s"
         },
         {
           "level": 2,
-          "time": "7m 30s",
-          "cost": {
-            "coins": 760
-          }
+          "time": "7m 30s"
         },
         {
           "level": 3,
-          "time": "30m",
-          "cost": {
-            "coins": 1580
-          }
+          "time": "30m"
         },
         {
           "level": 4,
-          "time": "1h 30m",
-          "cost": {
-            "coins": 3340
-          }
+          "time": "1h 30m"
         },
         {
           "level": 5,
-          "time": "3h",
-          "cost": {
-            "coins": 6980
-          }
+          "time": "3h"
         },
         {
           "level": 6,
-          "time": "7h 30m",
-          "cost": {
-            "coins": 14700
-          }
+          "time": "7h 30m"
         },
         {
           "level": 7,
-          "time": "18h",
-          "cost": {
-            "coins": 30900
-          }
+          "time": "18h"
         },
         {
           "level": 8,
-          "time": "1d 12h",
-          "cost": {
-            "coins": 64880
-          }
+          "time": "1d 12h"
         },
         {
           "level": 9,
-          "time": "3d",
-          "cost": {
-            "coins": 136280
-          }
+          "time": "3d"
         },
         {
           "level": 10,
-          "time": "4d 12h",
-          "cost": {
-            "coins": 287560
-          }
+          "time": "4d 12h"
         },
         {
           "level": 11,
-          "time": null,
-          "cost": {
-            "coins": 359450
-          }
+          "time": null
         }
       ]
     },
@@ -426,80 +292,47 @@
       "levels": [
         {
           "level": 1,
-          "time": "8s",
-          "cost": {
-            "coins": 120
-          }
+          "time": "8s"
         },
         {
           "level": 2,
-          "time": "2m 30s",
-          "cost": {
-            "coins": 240
-          }
+          "time": "2m 30s"
         },
         {
           "level": 3,
-          "time": "10m",
-          "cost": {
-            "coins": 520
-          }
+          "time": "10m"
         },
         {
           "level": 4,
-          "time": "30m",
-          "cost": {
-            "coins": 1080
-          }
+          "time": "30m"
         },
         {
           "level": 5,
-          "time": "1h",
-          "cost": {
-            "coins": 2260
-          }
+          "time": "1h"
         },
         {
           "level": 6,
-          "time": "2h 30m",
-          "cost": {
-            "coins": 4470
-          }
+          "time": "2h 30m"
         },
         {
           "level": 7,
-          "time": "6h",
-          "cost": {
-            "coins": 9980
-          }
+          "time": "6h"
         },
         {
           "level": 8,
-          "time": "12h",
-          "cost": {
-            "coins": 20940
-          }
+          "time": "12h"
         },
         {
           "level": 9,
-          "time": "1d",
-          "cost": {
-            "coins": 43960
-          }
+          "time": "1d"
         },
         {
           "level": 10,
-          "time": "1d 12h",
-          "cost": {
-            "coins": 92340
-          }
+          "time": "1d 12h"
         },
         {
           "level": 11,
-          "time": "1d 12h",
-          "cost": {
-            "coins": 359450
-          }
+          "time": "1d 12h"
         }
       ]
     },
@@ -558,73 +391,43 @@
       "levels": [
         {
           "level": 1,
-          "time": "10m",
-          "cost": {
-            "coins": 760
-          }
+          "time": "10m"
         },
         {
           "level": 2,
-          "time": "15m",
-          "cost": {
-            "coins": 1720
-          }
+          "time": "15m"
         },
         {
           "level": 3,
-          "time": "22m 30s",
-          "cost": {
-            "coins": 3460
-          }
+          "time": "22m 30s"
         },
         {
           "level": 4,
-          "time": "33m 45s",
-          "cost": {
-            "coins": 6900
-          }
+          "time": "33m 45s"
         },
         {
           "level": 5,
-          "time": "50m 37s",
-          "cost": {
-            "coins": 13800
-          }
+          "time": "50m 37s"
         },
         {
           "level": 6,
-          "time": "1h 15m",
-          "cost": {
-            "coins": 27600
-          }
+          "time": "1h 15m"
         },
         {
           "level": 7,
-          "time": "1h 53m",
-          "cost": {
-            "coins": 55220
-          }
+          "time": "1h 53m"
         },
         {
           "level": 8,
-          "time": "2h 50m",
-          "cost": {
-            "coins": 110400
-          }
+          "time": "2h 50m"
         },
         {
           "level": 9,
-          "time": "4h 16m",
-          "cost": {
-            "coins": 220880
-          }
+          "time": "4h 16m"
         },
         {
           "level": 10,
-          "time": "6h 24m",
-          "cost": {
-            "coins": 441760
-          }
+          "time": "6h 24m"
         }
       ]
     },
@@ -683,73 +486,43 @@
       "levels": [
         {
           "level": 1,
-          "time": "10m",
-          "cost": {
-            "coins": 760
-          }
+          "time": "10m"
         },
         {
           "level": 2,
-          "time": "15m",
-          "cost": {
-            "coins": 1720
-          }
+          "time": "15m"
         },
         {
           "level": 3,
-          "time": "22m 30s",
-          "cost": {
-            "coins": 3460
-          }
+          "time": "22m 30s"
         },
         {
           "level": 4,
-          "time": "33m 45s",
-          "cost": {
-            "coins": 6900
-          }
+          "time": "33m 45s"
         },
         {
           "level": 5,
-          "time": "50m 37s",
-          "cost": {
-            "coins": 13800
-          }
+          "time": "50m 37s"
         },
         {
           "level": 6,
-          "time": "1h 15m",
-          "cost": {
-            "coins": 27600
-          }
+          "time": "1h 15m"
         },
         {
           "level": 7,
-          "time": "1h 53m",
-          "cost": {
-            "coins": 55220
-          }
+          "time": "1h 53m"
         },
         {
           "level": 8,
-          "time": "2h 50m",
-          "cost": {
-            "coins": 110440
-          }
+          "time": "2h 50m"
         },
         {
           "level": 9,
-          "time": "4h 16m",
-          "cost": {
-            "coins": 220880
-          }
+          "time": "4h 16m"
         },
         {
           "level": 10,
-          "time": "6h 24m",
-          "cost": {
-            "coins": 441760
-          }
+          "time": "6h 24m"
         }
       ]
     },
@@ -808,31 +581,19 @@
       "levels": [
         {
           "level": 1,
-          "time": "6h",
-          "cost": {
-            "coins": 62000
-          }
+          "time": "6h"
         },
         {
           "level": 2,
-          "time": "18h",
-          "cost": {
-            "coins": 155000
-          }
+          "time": "18h"
         },
         {
           "level": 3,
-          "time": "1d 12h",
-          "cost": {
-            "coins": 248000
-          }
+          "time": "1d 12h"
         },
         {
           "level": 4,
-          "time": "3d",
-          "cost": {
-            "coins": 372000
-          }
+          "time": "3d"
         }
       ]
     },
@@ -891,25 +652,15 @@
       "levels": [
         {
           "level": 1,
-          "time": "15m",
-          "cost": {
-            "coins": 150000
-          }
+          "time": "15m"
         },
         {
           "level": 2,
-          "time": "1h",
-          "cost": {
-            "coins": 432000
-          }
+          "time": "1h"
         },
         {
           "level": 3,
-          "time": "3h",
-          "cost": {
-            "coins": 782000,
-            "minerals": 670000
-          }
+          "time": "3h"
         }
       ]
     },
@@ -968,24 +719,15 @@
       "levels": [
         {
           "level": 1,
-          "time": "15s",
-          "cost": {
-            "coins": 1300
-          }
+          "time": "15s"
         },
         {
           "level": 2,
-          "time": "1h",
-          "cost": {
-            "coins": 3300
-          }
+          "time": "1h"
         },
         {
           "level": 3,
-          "time": "12h",
-          "cost": {
-            "coins": 19300
-          }
+          "time": "12h"
         }
       ]
     },
@@ -1044,24 +786,15 @@
       "levels": [
         {
           "level": 1,
-          "time": "15m",
-          "cost": {
-            "coins": 8100
-          }
+          "time": "15m"
         },
         {
           "level": 2,
-          "time": "1h",
-          "cost": {
-            "coins": 26700
-          }
+          "time": "1h"
         },
         {
           "level": 3,
-          "time": "12h",
-          "cost": {
-            "coins": 145100
-          }
+          "time": "12h"
         }
       ]
     },
@@ -1120,24 +853,15 @@
       "levels": [
         {
           "level": 1,
-          "time": "15m",
-          "cost": {
-            "coins": 20020
-          }
+          "time": "15m"
         },
         {
           "level": 2,
-          "time": "1h",
-          "cost": {
-            "coins": 95700
-          }
+          "time": "1h"
         },
         {
           "level": 3,
-          "time": "12h",
-          "cost": {
-            "coins": 483600
-          }
+          "time": "12h"
         }
       ]
     },
@@ -1196,45 +920,27 @@
       "levels": [
         {
           "level": 1,
-          "time": "5m",
-          "cost": {
-            "coins": 1300
-          }
+          "time": "5m"
         },
         {
           "level": 2,
-          "time": "1h 15m",
-          "cost": {
-            "coins": 5400
-          }
+          "time": "1h 15m"
         },
         {
           "level": 3,
-          "time": "3h",
-          "cost": {
-            "coins": 21400
-          }
+          "time": "3h"
         },
         {
           "level": 4,
-          "time": "8h",
-          "cost": {
-            "coins": 85700
-          }
+          "time": "8h"
         },
         {
           "level": 5,
-          "time": "20h",
-          "cost": {
-            "coins": 342800
-          }
+          "time": "20h"
         },
         {
           "level": 6,
-          "time": "1d 16h",
-          "cost": {
-            "coins": 1371300
-          }
+          "time": "1d 16h"
         }
       ]
     },
@@ -1293,45 +999,27 @@
       "levels": [
         {
           "level": 1,
-          "time": "30m",
-          "cost": {
-            "coins": 62000
-          }
+          "time": "30m"
         },
         {
           "level": 2,
-          "time": "1h",
-          "cost": {
-            "coins": 155000
-          }
+          "time": "1h"
         },
         {
           "level": 3,
-          "time": null,
-          "cost": {
-            "coins": 248000
-          }
+          "time": null
         },
         {
           "level": 4,
-          "time": null,
-          "cost": {
-            "coins": 372000
-          }
+          "time": null
         },
         {
           "level": 5,
-          "time": null,
-          "cost": {
-            "coins": 558000
-          }
+          "time": null
         },
         {
           "level": 6,
-          "time": null,
-          "cost": {
-            "coins": 744000
-          }
+          "time": null
         }
       ]
     },
@@ -1390,91 +1078,47 @@
       "levels": [
         {
           "level": 1,
-          "time": "5m",
-          "cost": {
-            "coins": 1100
-          }
+          "time": "5m"
         },
         {
           "level": 2,
-          "time": "15m",
-          "cost": {
-            "coins": 5400,
-            "minerals": 2800
-          }
+          "time": "15m"
         },
         {
           "level": 3,
-          "time": "45m",
-          "cost": {
-            "coins": 27100,
-            "minerals": 11600
-          }
+          "time": "45m"
         },
         {
           "level": 4,
-          "time": "2h 15m",
-          "cost": {
-            "coins": 135600,
-            "minerals": 58100
-          }
+          "time": "2h 15m"
         },
         {
           "level": 5,
-          "time": "6h 45m",
-          "cost": {
-            "coins": 678100,
-            "minerals": 299000
-          }
+          "time": "6h 45m"
         },
         {
           "level": 6,
-          "time": "20h 15m",
-          "cost": {
-            "coins": 3390600,
-            "minerals": 1453100
-          }
+          "time": "20h 15m"
         },
         {
           "level": 7,
-          "time": "2d",
-          "cost": {
-            "coins": 5076300,
-            "minerals": 1453100
-          }
+          "time": "2d"
         },
         {
           "level": 8,
-          "time": "3d",
-          "cost": {
-            "coins": 7595000,
-            "minerals": 1453100
-          }
+          "time": "3d"
         },
         {
           "level": 9,
-          "time": "4d",
-          "cost": {
-            "coins": 11408000,
-            "minerals": 1453000
-          }
+          "time": "4d"
         },
         {
           "level": 10,
-          "time": "5d 12h",
-          "cost": {
-            "coins": 17143000,
-            "minerals": 1452700
-          }
+          "time": "5d 12h"
         },
         {
           "level": 11,
-          "time": "10d",
-          "cost": {
-            "coins": 34286000,
-            "minerals": 5810800,
-            "sphere": 1
-          }
+          "time": "10d"
         }
       ]
     },
@@ -1533,91 +1177,47 @@
       "levels": [
         {
           "level": 1,
-          "time": "30s",
-          "cost": {
-            "coins": 1100
-          }
+          "time": "30s"
         },
         {
           "level": 2,
-          "time": "15m",
-          "cost": {
-            "coins": 5400,
-            "minerals": 2800
-          }
+          "time": "15m"
         },
         {
           "level": 3,
-          "time": "45m",
-          "cost": {
-            "coins": 27200,
-            "minerals": 11600
-          }
+          "time": "45m"
         },
         {
           "level": 4,
-          "time": "5h",
-          "cost": {
-            "coins": 135600,
-            "minerals": 58100
-          }
+          "time": "5h"
         },
         {
           "level": 5,
-          "time": "12h",
-          "cost": {
-            "coins": 678100,
-            "minerals": 290600
-          }
+          "time": "12h"
         },
         {
           "level": 6,
-          "time": "1d",
-          "cost": {
-            "coins": 3390600,
-            "minerals": 1453100
-          }
+          "time": "1d"
         },
         {
           "level": 7,
-          "time": "2d",
-          "cost": {
-            "coins": 5085900,
-            "minerals": 2179700
-          }
+          "time": "2d"
         },
         {
           "level": 8,
-          "time": "3d",
-          "cost": {
-            "coins": 7628800,
-            "minerals": 3269000
-          }
+          "time": "3d"
         },
         {
           "level": 9,
-          "time": "4d",
-          "cost": {
-            "coins": 11443700,
-            "minerals": 4905800
-          }
+          "time": "4d"
         },
         {
           "level": 10,
-          "time": "5d 12h",
-          "cost": {
-            "coins": 19957800,
-            "minerals": 7347000
-          }
+          "time": "5d 12h"
         },
         {
           "level": 11,
-          "time": "7d",
-          "cost": {
-            "coins": 39915600,
-            "minerals": 14694000,
-            "sphere": 1
-          }
+          "time": "7d"
         }
       ]
     },
@@ -1676,51 +1276,27 @@
       "levels": [
         {
           "level": 1,
-          "time": "5h",
-          "cost": {
-            "coins": 153500
-          }
+          "time": "5h"
         },
         {
           "level": 2,
-          "time": "1d",
-          "cost": {
-            "coins": 635500,
-            "minerals": 492900
-          }
+          "time": "1d"
         },
         {
           "level": 3,
-          "time": "2d",
-          "cost": {
-            "coins": 1906500,
-            "minerals": 697500
-          }
+          "time": "2d"
         },
         {
           "level": 4,
-          "time": "4d",
-          "cost": {
-            "coins": 3394500,
-            "minerals": 1162500
-          }
+          "time": "4d"
         },
         {
           "level": 5,
-          "time": "6d",
-          "cost": {
-            "coins": 7595000,
-            "minerals": 1860000
-          }
+          "time": "6d"
         },
         {
           "level": 6,
-          "time": "8d",
-          "cost": {
-            "coins": 9300000,
-            "minerals": 3720000,
-            "sphere": 1
-          }
+          "time": "8d"
         }
       ]
     },
@@ -1779,51 +1355,27 @@
       "levels": [
         {
           "level": 1,
-          "time": "5h",
-          "cost": {
-            "coins": 135600
-          }
+          "time": "5h"
         },
         {
           "level": 2,
-          "time": "1d",
-          "cost": {
-            "coins": 542500,
-            "minerals": 290600
-          }
+          "time": "1d"
         },
         {
           "level": 3,
-          "time": "2d",
-          "cost": {
-            "coins": 1625500,
-            "minerals": 697500
-          }
+          "time": "2d"
         },
         {
           "level": 4,
-          "time": "4d",
-          "cost": {
-            "coins": 3177500,
-            "minerals": 1162500
-          }
+          "time": "4d"
         },
         {
           "level": 5,
-          "time": "6d",
-          "cost": {
-            "coins": 6820000,
-            "minerals": 1860000
-          }
+          "time": "6d"
         },
         {
           "level": 6,
-          "time": "8d",
-          "cost": {
-            "coins": 10230000,
-            "minerals": 4650000,
-            "sphere": 1
-          }
+          "time": "8d"
         }
       ]
     },
@@ -1882,35 +1434,19 @@
       "levels": [
         {
           "level": 1,
-          "time": "5h",
-          "cost": {
-            "coins": 232500
-          }
+          "time": "5h"
         },
         {
           "level": 2,
-          "time": "1d",
-          "cost": {
-            "coins": 1162500,
-            "minerals": 697500
-          }
+          "time": "1d"
         },
         {
           "level": 3,
-          "time": "2d",
-          "cost": {
-            "coins": 3720000,
-            "minerals": 1488000
-          }
+          "time": "2d"
         },
         {
           "level": 4,
-          "time": "6d",
-          "cost": {
-            "coins": 16740000,
-            "minerals": 6138000,
-            "sphere": 1
-          }
+          "time": "6d"
         }
       ]
     },
@@ -1969,43 +1505,23 @@
       "levels": [
         {
           "level": 1,
-          "time": "30s",
-          "cost": {
-            "coins": 153000
-          }
+          "time": "30s"
         },
         {
           "level": 2,
-          "time": "12h",
-          "cost": {
-            "coins": 355555,
-            "minerals": 5000000
-          }
+          "time": "12h"
         },
         {
           "level": 3,
-          "time": "1d 2h 30m",
-          "cost": {
-            "coins": 1111111,
-            "minerals": 7000000
-          }
+          "time": "1d 2h 30m"
         },
         {
           "level": 4,
-          "time": "2d 12h 40m",
-          "cost": {
-            "coins": 1888888,
-            "minerals": 12000000
-          }
+          "time": "2d 12h 40m"
         },
         {
           "level": 5,
-          "time": "4d",
-          "cost": {
-            "coins": 3222222,
-            "minerals": 30000000,
-            "sphere": 1
-          }
+          "time": "4d"
         }
       ]
     },
@@ -2064,27 +1580,15 @@
       "levels": [
         {
           "level": 1,
-          "time": "1h",
-          "cost": {
-            "coins": 15000
-          }
+          "time": "1h"
         },
         {
           "level": 2,
-          "time": "2d",
-          "cost": {
-            "coins": 3000000,
-            "minerals": 2375000
-          }
+          "time": "2d"
         },
         {
           "level": 3,
-          "time": "4d",
-          "cost": {
-            "coins": 8000000,
-            "minerals": 5906250,
-            "sphere": 1
-          }
+          "time": "4d"
         }
       ]
     },
@@ -2143,26 +1647,15 @@
       "levels": [
         {
           "level": 1,
-          "time": "6h",
-          "cost": {
-            "coins": 437500
-          }
+          "time": "6h"
         },
         {
           "level": 2,
-          "time": "12h",
-          "cost": {
-            "coins": 2000000,
-            "minerals": 1687500
-          }
+          "time": "12h"
         },
         {
           "level": 3,
-          "time": "1d",
-          "cost": {
-            "coins": 4000000,
-            "minerals": 3000000
-          }
+          "time": "1d"
         }
       ]
     },
@@ -2222,46 +1715,27 @@
       "levels": [
         {
           "level": 1,
-          "time": "0s",
-          "cost": {
-            "coins": 300
-          }
+          "time": "0s"
         },
         {
           "level": 2,
-          "time": "0s",
-          "cost": {
-            "coins": 3100
-          }
+          "time": "0s"
         },
         {
           "level": 3,
-          "time": "0s",
-          "cost": {
-            "coins": 62000
-          }
+          "time": "0s"
         },
         {
           "level": 4,
-          "time": "0s",
-          "cost": {
-            "coins": 124000
-          }
+          "time": "0s"
         },
         {
           "level": 5,
-          "time": "0s",
-          "cost": {
-            "coins": 248000
-          }
+          "time": "0s"
         },
         {
           "level": 6,
-          "time": "0s",
-          "cost": {
-            "coins": 300000,
-            "minerals": 100
-          }
+          "time": "0s"
         }
       ]
     }
