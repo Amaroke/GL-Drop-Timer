@@ -902,6 +902,62 @@ describe("App", () => {
 
         expect(steps()).toEqual(["Build Cannon 1 | 5m"]);
       });
+
+      describe("Done", () => {
+        it("adds an instance at level 1 for a build step", async () => {
+          renderSteps({ observatory: [2], mine: [3, 3] });
+
+          await click("Done Build Cannon 1");
+
+          expect(levelsOf("Cannon")).toEqual(["1"]);
+          expect(screen.getByText("Nothing to build or upgrade")).toBeInTheDocument();
+        });
+
+        it("raises that Building by one level for an upgrade step", async () => {
+          renderSteps({ observatory: [2], mine: [3, 2], cannon: [1] });
+
+          await click("Done Upgrade Mine 2 to level 3");
+
+          expect(levelsOf("Mine")).toEqual(["3", "3"]);
+          expect(
+            within(screen.getByRole("group", { name: "Mine" })).getByRole("list", {
+              name: "Statuses",
+            }),
+          ).toHaveTextContent("Maxed");
+          expect(screen.getByText("Nothing to build or upgrade")).toBeInTheDocument();
+        });
+
+        it("keeps the levels in descending order", async () => {
+          renderSteps({ observatory: [2], mine: [2, 2], cannon: [1] });
+
+          await click("Done Upgrade Mine 2 to level 3");
+
+          expect(levelsOf("Mine")).toEqual(["3", "2"]);
+          expect(steps()).toEqual(["Upgrade Mine 2 to level 3 | 50m"]);
+        });
+
+        it("saves the change to the Colony", async () => {
+          const colonyStore = createMemoryColonyStore();
+          seed(colonyStore, 1, { observatory: [2], mine: [3, 2] });
+          render(
+            <App
+              store={createMemoryDropStore()}
+              auth={SIGNED_OUT_AUTH}
+              now={() => NOW}
+              colonyStore={colonyStore}
+              catalog={stepCatalog()}
+            />,
+          );
+
+          await click("Done Build Cannon 1");
+
+          expect(colonyStore.get("main")).toEqual({
+            starBaseLevel: 1,
+            buildings: { observatory: [2], mine: [3, 2], cannon: [1] },
+            updatedAt: NOW,
+          });
+        });
+      });
     });
   });
 

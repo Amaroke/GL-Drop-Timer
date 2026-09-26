@@ -24,12 +24,13 @@ function costText(cost: Cost): string {
     .join(", ");
 }
 
-function StepRow({ step }: { step: NextStep }) {
+function StepRow({ step, onDone }: { step: NextStep; onDone: (step: NextStep) => void }) {
   const tooltipId = useId();
+  const label = stepLabel(step);
   return (
-    <li className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-3 py-2">
-      <span className="text-sm text-[#e9e6f5]">{stepLabel(step)}</span>
-      <span className="group relative">
+    <li className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2">
+      <span className="text-sm text-[#e9e6f5]">{label}</span>
+      <span className="group relative ml-auto">
         <span
           tabIndex={0}
           aria-describedby={tooltipId}
@@ -45,6 +46,14 @@ function StepRow({ step }: { step: NextStep }) {
           {costText(step.cost)}
         </span>
       </span>
+      <button
+        type="button"
+        aria-label={`Done ${label}`}
+        onClick={() => onDone(step)}
+        className="rounded-md border border-white/15 px-2 py-0.5 text-xs text-white/70 hover:bg-white/10"
+      >
+        Done
+      </button>
     </li>
   );
 }
@@ -54,9 +63,10 @@ type NextStepsProps = {
   colonyId: string;
   starBaseLevel: number;
   buildings: ColonyBuildings;
+  onDone: (step: NextStep) => void;
 };
 
-export function NextSteps({ catalog, colonyId, starBaseLevel, buildings }: NextStepsProps) {
+export function NextSteps({ catalog, colonyId, starBaseLevel, buildings, onDone }: NextStepsProps) {
   const [order, setOrder] = useState<StepOrder>("category");
   const [expanded, setExpanded] = useState(false);
   const selectId = useId();
@@ -91,7 +101,11 @@ export function NextSteps({ catalog, colonyId, starBaseLevel, buildings }: NextS
       ) : (
         <ul aria-label="Next steps" className="flex flex-col gap-2">
           {shown.map((step) => (
-            <StepRow key={`${step.typeId}-${step.kind}-${step.instance}`} step={step} />
+            <StepRow
+              key={`${step.typeId}-${step.kind}-${step.instance}`}
+              step={step}
+              onDone={onDone}
+            />
           ))}
         </ul>
       )}
