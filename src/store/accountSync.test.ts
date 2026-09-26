@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAuthStore, type AuthService } from "../auth/auth";
+import { createAccountSync, type AccountSession } from "./accountSync";
+import { createMemoryColonyStore, type ColonyEntry, type ColonyStore } from "./colonyStore";
 import { createMemoryDropStore, type DropStore } from "./dropStore";
 import type { SyncStatus, SyncStatusStore } from "./sendScheduler";
-import { createSyncedDropStore } from "./syncedDropStore";
 
 function fakeRemoteStore(initial: Record<string, number> = {}) {
   const store = createMemoryDropStore(initial);
@@ -42,17 +43,63 @@ function authServiceFrom(store: ReturnType<typeof createAuthStore>): AuthService
   };
 }
 
+const IDLE_STATUS: SyncStatusStore = {
+  getStatus: () => "synced",
+  getNextSendAt: () => null,
+  subscribe: () => () => {},
+  saveNow: () => {},
+};
+
+type RemoteDropStore = DropStore & { syncStatus?: SyncStatusStore; dispose?: () => void };
+
+function sessionOf(
+  drops: RemoteDropStore,
+  colonies: ColonyStore = createMemoryColonyStore(),
+): AccountSession {
+  return {
+    drops,
+    colonies,
+    syncStatus: drops.syncStatus ?? IDLE_STATUS,
+    dispose: () => drops.dispose?.(),
+  };
+}
+
+function syncedDrops(deps: {
+  auth: AuthService;
+  localStore: DropStore;
+  createRemoteStore: (uid: string) => RemoteDropStore;
+  mergeLocalIntoRemote: (uid: string) => Promise<void>;
+}) {
+  return createAccountSync({
+    auth: deps.auth,
+    localDrops: deps.localStore,
+    localColonies: createMemoryColonyStore(),
+    createSession: (uid) => sessionOf(deps.createRemoteStore(uid)),
+    mergeLocalIntoAccount: deps.mergeLocalIntoRemote,
+  }).drops;
+}
+
+function colony(starBaseLevel: number, updatedAt: number): ColonyEntry {
+  return { starBaseLevel, buildings: {}, updatedAt };
+}
+
+const USER = { uid: "1", displayName: null, email: null };
+
+async function settle() {
+  for (let i = 0; i < 5; i += 1) await Promise.resolve();
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((r) => (resolve = r));
   return { promise, resolve };
 }
 
-describe("createSyncedDropStore", () => {
+describe("createAccountSync drops", () => {
   it("uses the local store while signed out", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => createMemoryDropStore(),
@@ -69,7 +116,7 @@ describe("createSyncedDropStore", () => {
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
     const remoteStore = createMemoryDropStore();
     const merge = deferred<void>();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -90,7 +137,7 @@ describe("createSyncedDropStore", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
     const remoteStore = createMemoryDropStore({ "drop-a": 4000 });
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -113,7 +160,7 @@ describe("createSyncedDropStore", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
     const remoteStore = createMemoryDropStore();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -135,7 +182,7 @@ describe("createSyncedDropStore", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const localStore = createMemoryDropStore();
     const remoteStore = createMemoryDropStore({ "drop-a": 9000 });
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -159,7 +206,7 @@ describe("createSyncedDropStore", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const localStore = createMemoryDropStore();
     const remoteStore = createMemoryDropStore();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -184,7 +231,7 @@ describe("createSyncedDropStore", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
     const remoteStore = createMemoryDropStore({ "drop-a": 9000 });
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -208,7 +255,7 @@ describe("createSyncedDropStore", () => {
     const localStore = createMemoryDropStore();
     const remoteStore = createMemoryDropStore({ "drop-a": 9000 });
     const subscribeSpy = vi.spyOn(remoteStore, "subscribe");
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -251,7 +298,7 @@ describe("createSyncedDropStore", () => {
       if (remote && remote.updatedAt >= local.updatedAt) return;
       remoteStore.set("drop-a", local.readyAt, local.updatedAt);
     };
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -277,7 +324,7 @@ describe("createSyncedDropStore", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
     const remoteStore = createMemoryDropStore({ "drop-a": 9000 });
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -300,7 +347,7 @@ describe("createSyncedDropStore", () => {
     const authStore = createAuthStore({ status: "restoring" });
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
     const remoteStore = createMemoryDropStore({ "drop-a": 9000 });
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -314,7 +361,7 @@ describe("createSyncedDropStore", () => {
     const authStore = createAuthStore({ status: "restoring" });
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
     const remoteStore = createMemoryDropStore({ "drop-a": 9000 });
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -336,7 +383,7 @@ describe("createSyncedDropStore", () => {
     const localStore = createMemoryDropStore({ "drop-a": 1000 });
     const remoteStore = createMemoryDropStore({ "drop-a": 9000 });
     const merge = deferred<void>();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore,
       createRemoteStore: () => remoteStore,
@@ -356,11 +403,11 @@ describe("createSyncedDropStore", () => {
   });
 });
 
-describe("createSyncedDropStore sync status", () => {
+describe("createAccountSync sync status", () => {
   it("reports no sync status while signed out", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const remote = fakeRemoteStore();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore: createMemoryDropStore(),
       createRemoteStore: () => remote.store,
@@ -373,7 +420,7 @@ describe("createSyncedDropStore sync status", () => {
   it("forwards the remote store's sync status once switched over", async () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const remote = fakeRemoteStore();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore: createMemoryDropStore(),
       createRemoteStore: () => remote.store,
@@ -396,7 +443,7 @@ describe("createSyncedDropStore sync status", () => {
   it("notifies sync status subscribers when the remote status changes", async () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const remote = fakeRemoteStore();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore: createMemoryDropStore(),
       createRemoteStore: () => remote.store,
@@ -421,7 +468,7 @@ describe("createSyncedDropStore sync status", () => {
   it("reverts to no sync status on sign-out and stops reacting to the old remote status", async () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const remote = fakeRemoteStore();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore: createMemoryDropStore(),
       createRemoteStore: () => remote.store,
@@ -448,7 +495,7 @@ describe("createSyncedDropStore sync status", () => {
   it("forwards Save now to the account store", async () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const remote = fakeRemoteStore();
-    const store = createSyncedDropStore({
+    const store = syncedDrops({
       auth: authServiceFrom(authStore),
       localStore: createMemoryDropStore(),
       createRemoteStore: () => remote.store,
@@ -470,7 +517,7 @@ describe("createSyncedDropStore sync status", () => {
     const authStore = createAuthStore({ status: "signed-out" });
     const remote = fakeRemoteStore();
     const createRemoteStore = vi.fn(() => remote.store);
-    createSyncedDropStore({
+    syncedDrops({
       auth: authServiceFrom(authStore),
       localStore: createMemoryDropStore(),
       createRemoteStore,
@@ -488,5 +535,92 @@ describe("createSyncedDropStore sync status", () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(createRemoteStore).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("createAccountSync colonies", () => {
+  function setup(mergeLocalIntoAccount: (uid: string) => Promise<void> = async () => {}) {
+    const authStore = createAuthStore({ status: "signed-out" });
+    const localColonies = createMemoryColonyStore();
+    const remoteColonies = createMemoryColonyStore();
+    const sync = createAccountSync({
+      auth: authServiceFrom(authStore),
+      localDrops: createMemoryDropStore(),
+      localColonies,
+      createSession: () => sessionOf(createMemoryDropStore(), remoteColonies),
+      mergeLocalIntoAccount,
+    });
+    return { authStore, localColonies, remoteColonies, colonies: sync.colonies };
+  }
+
+  it("keeps Colonies local for a visitor without an account", () => {
+    const { localColonies, colonies } = setup();
+
+    colonies.set("main", colony(3, 10));
+
+    expect(localColonies.get("main")).toEqual(colony(3, 10));
+    expect(colonies.get("main")).toEqual(colony(3, 10));
+  });
+
+  it("switches Colonies to the account once the merge completes", async () => {
+    const { authStore, localColonies, remoteColonies, colonies } = setup();
+    localColonies.set("main", colony(2, 10));
+    remoteColonies.set("main", colony(6, 20));
+
+    authStore.setState({ status: "signed-in", user: USER });
+    await settle();
+
+    expect(colonies.get("main")).toEqual(colony(6, 20));
+  });
+
+  it("sends Colony changes to the account and keeps a local copy once signed in", async () => {
+    const { authStore, localColonies, remoteColonies, colonies } = setup();
+    authStore.setState({ status: "signed-in", user: USER });
+    await settle();
+
+    colonies.set("colony-1", colony(4, 30));
+
+    expect(remoteColonies.get("colony-1")).toEqual(colony(4, 30));
+    expect(localColonies.get("colony-1")).toEqual(colony(4, 30));
+  });
+
+  it("notifies Colony subscribers when the account store takes over", async () => {
+    const { authStore, remoteColonies, colonies } = setup();
+    remoteColonies.set("main", colony(6, 20));
+    const onChange = vi.fn();
+    colonies.subscribe("main", onChange);
+
+    authStore.setState({ status: "signed-in", user: USER });
+    await settle();
+
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it("re-merges before switching when a Colony edit races the in-flight merge", async () => {
+    const merge = deferred<void>();
+    let mergeCalls = 0;
+    const { authStore, colonies } = setup(async () => {
+      mergeCalls += 1;
+      if (mergeCalls === 1) await merge.promise;
+    });
+
+    authStore.setState({ status: "signed-in", user: USER });
+    colonies.set("main", colony(5, 40));
+    merge.resolve();
+    await settle();
+
+    expect(mergeCalls).toBe(2);
+  });
+
+  it("reverts Colonies to the local store when signing out", async () => {
+    const { authStore, localColonies, remoteColonies, colonies } = setup();
+    localColonies.set("main", colony(2, 10));
+    remoteColonies.set("main", colony(6, 20));
+    authStore.setState({ status: "signed-in", user: USER });
+    await settle();
+
+    authStore.setState({ status: "signed-out" });
+
+    expect(colonies.get("main")).toEqual(colony(2, 10));
   });
 });

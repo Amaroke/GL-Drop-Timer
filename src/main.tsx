@@ -7,32 +7,41 @@ import type { AuthService } from "./auth/auth.ts";
 import { createFirebaseAuthServiceFromApp, getFirebaseApp } from "./auth/firebaseAuth.ts";
 import { readFirebaseConfig } from "./config/firebaseConfig.ts";
 import { DROPS } from "./drops.ts";
-import { createLocalStorageColonyStore } from "./store/colonyStore.ts";
+import { COLONIES } from "./planner/colonies.ts";
+import { createFirestoreAccountSync } from "./store/accountSync.ts";
+import { createLocalStorageColonyStore, type ColonyStore } from "./store/colonyStore.ts";
 import { createLocalStorageDropStore, type DropStore } from "./store/dropStore.ts";
 import { createAppFirestore } from "./store/firestoreDocumentStore.ts";
-import { createFirestoreSyncedDropStore } from "./store/syncedDropStore.ts";
 
-function createStore(app: FirebaseApp | null, auth: AuthService, localStore: DropStore): DropStore {
-  if (!app) return localStore;
+function createStores(
+  app: FirebaseApp | null,
+  auth: AuthService,
+  local: { drops: DropStore; colonies: ColonyStore },
+): { drops: DropStore; colonies: ColonyStore } {
+  if (!app) return local;
   try {
-    return createFirestoreSyncedDropStore({
+    return createFirestoreAccountSync({
       auth,
-      localStore,
+      localDrops: local.drops,
+      localColonies: local.colonies,
       db: createAppFirestore(app),
-      keys: DROPS.map((drop) => drop.storageKey),
+      dropKeys: DROPS.map((drop) => drop.storageKey),
+      colonyIds: COLONIES.map((colony) => colony.id),
     });
   } catch {
-    return localStore;
+    return local;
   }
 }
 
 const app = getFirebaseApp(readFirebaseConfig());
 const auth = createFirebaseAuthServiceFromApp(app);
-const store = createStore(app, auth, createLocalStorageDropStore());
-const colonyStore = createLocalStorageColonyStore();
+const stores = createStores(app, auth, {
+  drops: createLocalStorageDropStore(),
+  colonies: createLocalStorageColonyStore(),
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App store={store} auth={auth} now={Date.now} colonyStore={colonyStore} />
+    <App store={stores.drops} auth={auth} now={Date.now} colonyStore={stores.colonies} />
   </StrictMode>,
 );

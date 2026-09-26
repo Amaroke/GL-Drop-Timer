@@ -1,11 +1,12 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { act } from "react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { createAuthStore, type AuthService, type AuthState } from "../auth/auth";
+import { createFirestoreAccountSync } from "../store/accountSync";
+import { createMemoryColonyStore, type ColonyStore } from "../store/colonyStore";
 import { createMemoryDropStore, type DropStore } from "../store/dropStore";
-import { createFirestoreSyncedDropStore } from "../store/syncedDropStore";
 
 vi.mock("firebase/firestore", () => ({
   doc: vi.fn((_db: unknown, ...segments: string[]) => ({ path: segments.join("/") })),
@@ -100,19 +101,31 @@ function setVisibility(state: DocumentVisibilityState) {
 
 let auth: ReturnType<typeof authServiceFrom>;
 let localStore: DropStore;
+let localColonies: ColonyStore;
 
 async function renderSignedIn() {
   auth = authServiceFrom(SIGNED_IN);
   localStore = createMemoryDropStore();
-  const store = createFirestoreSyncedDropStore({
+  localColonies = createMemoryColonyStore();
+  const sync = createFirestoreAccountSync({
     auth,
-    localStore,
+    localDrops: localStore,
+    localColonies,
     db: FAKE_DB,
-    keys: [STAR_BATTERY, TOOL_CASE],
+    dropKeys: [STAR_BATTERY, TOOL_CASE],
+    colonyIds: ["main"],
   });
   await tick(0);
-  render(<App store={store} auth={auth} now={() => NOW} />);
-  return store;
+  render(<App store={sync.drops} auth={auth} now={() => NOW} colonyStore={sync.colonies} />);
+  return sync;
+}
+
+function setStarBaseLevel(level: number) {
+  act(() =>
+    fireEvent.change(screen.getByRole("combobox", { name: "Star Base level" }), {
+      target: { value: String(level) },
+    }),
+  );
 }
 
 describe("deferred sync", () => {
@@ -363,5 +376,70 @@ describe("deferred sync", () => {
     await tick(FIVE_MINUTES);
 
     expect(vi.mocked(setDoc).mock.calls[0][1]).toMatchObject({ updatedAt: NOW });
+  });
+
+  it("holds a Colony change behind the status dot and sends it with Save now", async () => {
+    await renderSignedIn();
+    setStarBaseLevel(3);
+
+    expect(localColonies.get("main")).toMatchObject({ starBaseLevel: 3, updatedAt: NOW });
+    expect(setDoc).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("status", { name: /Not synced yet, next send at/ }),
+    ).toBeInTheDocument();
+
+    await act(async () => screen.getByRole("button", { name: "Save now" }).click());
+
+    expect(setDoc).toHaveBeenCalledWith(
+      { path: "users/player-1/colonies/main" },
+      { starBase: 3, buildings: {}, updatedAt: NOW },
+    );
+    expect(screen.getByRole("status", { name: "Synced" })).toBeInTheDocument();
+  });
+
+  it("sends Drop and Colony changes together in the same deferred send", async () => {
+    await renderSignedIn();
+    collect("Star Battery");
+    setStarBaseLevel(2);
+
+    await tick(FIVE_MINUTES);
+
+    const paths = vi.mocked(setDoc).mock.calls.map(([ref]) => (ref as { path: string }).path);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        `users/player-1/drops/${STAR_BATTERY}`,
+        "users/player-1/colonies/main",
+      ]),
+    );
+  });
+
+  it("shows a Colony edited on another device through the real-time listener", async () => {
+    await renderSignedIn();
+
+    act(() =>
+      snapshotHandlers.get("users/player-1/colonies/main")?.({
+        data: () => ({ starBase: 7, buildings: {}, updatedAt: NOW + 5000 }),
+      }),
+    );
+
+    expect(screen.getByRole("combobox", { name: "Star Base level" })).toHaveValue("7");
+  });
+
+  it("keeps a newer local Colony edit over an older one from the listener", async () => {
+    await renderSignedIn();
+    setStarBaseLevel(4);
+
+    act(() =>
+      snapshotHandlers.get("users/player-1/colonies/main")?.({
+        data: () => ({ starBase: 9, buildings: {}, updatedAt: NOW - 5000 }),
+      }),
+    );
+
+    expect(screen.getByRole("combobox", { name: "Star Base level" })).toHaveValue("4");
+    await tick(FIVE_MINUTES);
+    expect(setDoc).toHaveBeenCalledWith(
+      { path: "users/player-1/colonies/main" },
+      expect.objectContaining({ starBase: 4 }),
+    );
   });
 });

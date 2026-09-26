@@ -1,6 +1,7 @@
 import type { FirebaseApp } from "firebase/app";
 import {
   doc,
+  getDoc,
   initializeFirestore,
   onSnapshot,
   persistentLocalCache,
@@ -116,4 +117,24 @@ export function createFirestoreDocumentStore<T extends { updatedAt: number }>(
       scheduler.dispose();
     },
   };
+}
+
+export async function mergeLocalIntoCollection<T extends { updatedAt: number }>(
+  db: Firestore,
+  uid: string,
+  collection: string,
+  codec: DocumentCodec<T>,
+  readLocal: (key: string) => T | null,
+  keys: readonly string[],
+): Promise<void> {
+  await Promise.all(
+    keys.map(async (key) => {
+      const local = readLocal(key);
+      if (!local) return;
+      const ref = doc(db, "users", uid, collection, key);
+      const account = codec.fromDocument((await getDoc(ref)).data());
+      if (account && account.updatedAt >= local.updatedAt) return;
+      await setDoc(ref, codec.toDocument(local));
+    }),
+  );
 }
