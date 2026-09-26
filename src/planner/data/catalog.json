@@ -530,7 +530,7 @@
       "id": "refinery",
       "name": "Refinery",
       "category": "Resource",
-      "mainOnly": false,
+      "mainOnly": true,
       "unlocks": [
         {
           "starBase": 1,
