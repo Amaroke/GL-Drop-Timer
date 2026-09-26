@@ -17,9 +17,65 @@ service cloud.firestore {
         && (data.readyAt == null || isValidTimestamp(data.readyAt));
     }
 
+    function isValidLevels(levels) {
+      return levels.join(',').matches('([1-9][0-9]?(,[1-9][0-9]?){0,499})?')
+        && !levels.hasAny(levels.join(',').split(','));
+    }
+
+    function isValidBuildings(values) {
+      return values.size() <= 30
+        && (values.size() <= 0 || isValidLevels(values[0]))
+        && (values.size() <= 1 || isValidLevels(values[1]))
+        && (values.size() <= 2 || isValidLevels(values[2]))
+        && (values.size() <= 3 || isValidLevels(values[3]))
+        && (values.size() <= 4 || isValidLevels(values[4]))
+        && (values.size() <= 5 || isValidLevels(values[5]))
+        && (values.size() <= 6 || isValidLevels(values[6]))
+        && (values.size() <= 7 || isValidLevels(values[7]))
+        && (values.size() <= 8 || isValidLevels(values[8]))
+        && (values.size() <= 9 || isValidLevels(values[9]))
+        && (values.size() <= 10 || isValidLevels(values[10]))
+        && (values.size() <= 11 || isValidLevels(values[11]))
+        && (values.size() <= 12 || isValidLevels(values[12]))
+        && (values.size() <= 13 || isValidLevels(values[13]))
+        && (values.size() <= 14 || isValidLevels(values[14]))
+        && (values.size() <= 15 || isValidLevels(values[15]))
+        && (values.size() <= 16 || isValidLevels(values[16]))
+        && (values.size() <= 17 || isValidLevels(values[17]))
+        && (values.size() <= 18 || isValidLevels(values[18]))
+        && (values.size() <= 19 || isValidLevels(values[19]))
+        && (values.size() <= 20 || isValidLevels(values[20]))
+        && (values.size() <= 21 || isValidLevels(values[21]))
+        && (values.size() <= 22 || isValidLevels(values[22]))
+        && (values.size() <= 23 || isValidLevels(values[23]))
+        && (values.size() <= 24 || isValidLevels(values[24]))
+        && (values.size() <= 25 || isValidLevels(values[25]))
+        && (values.size() <= 26 || isValidLevels(values[26]))
+        && (values.size() <= 27 || isValidLevels(values[27]))
+        && (values.size() <= 28 || isValidLevels(values[28]))
+        && (values.size() <= 29 || isValidLevels(values[29]));
+    }
+
+    function isValidColony() {
+      return request.resource.data.keys().hasOnly(['starBase', 'buildings', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['starBase', 'buildings', 'updatedAt'])
+        && request.resource.data.starBase is int
+        && request.resource.data.starBase >= 1
+        && request.resource.data.starBase <= 20
+        && request.resource.data.buildings is map
+        && isValidTimestamp(request.resource.data.updatedAt)
+        && isValidBuildings(request.resource.data.buildings.values());
+    }
+
     match /users/{userId}/drops/{dropId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && isValidDrop();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/colonies/{colonyId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidColony();
       allow delete: if isOwner(userId);
     }
   }

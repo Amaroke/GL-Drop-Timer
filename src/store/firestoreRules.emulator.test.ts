@@ -98,3 +98,84 @@ describe("Firestore security rules", () => {
     await assertFails(deleteDoc(doc(db, OWNER_PATH)));
   });
 });
+
+const VALID_COLONY = { starBase: 5, buildings: { "gold-mine": [4, 2] }, updatedAt: 500 };
+const COLONY_PATH = "users/player-1/colonies/main";
+
+describe("Firestore security rules for Colonies", () => {
+  it("lets a signed-in player read and write their own Colony documents", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+    const ref = doc(db, COLONY_PATH);
+
+    await assertSucceeds(setDoc(ref, VALID_COLONY));
+    const snapshot = await assertSucceeds(getDoc(ref));
+    expect(snapshot.data()).toEqual(VALID_COLONY);
+  });
+
+  it("denies another player and unauthenticated visitors", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(firestoreOf(context), COLONY_PATH), VALID_COLONY);
+    });
+
+    for (const context of [
+      testEnv.authenticatedContext("player-2"),
+      testEnv.unauthenticatedContext(),
+    ]) {
+      const ref = doc(firestoreOf(context), COLONY_PATH);
+      await assertFails(getDoc(ref));
+      await assertFails(setDoc(ref, VALID_COLONY));
+      await assertFails(deleteDoc(ref));
+    }
+  });
+
+  it("accepts the edges of the allowed bounds", async () => {
+    const ref = doc(firestoreOf(testEnv.authenticatedContext("player-1")), COLONY_PATH);
+    const manyTypes = Object.fromEntries(
+      Array.from({ length: 30 }, (_, index) => [`type-${index}`, Array(500).fill(99)]),
+    );
+
+    await assertSucceeds(setDoc(ref, { starBase: 1, buildings: {}, updatedAt: 0 }));
+    await assertSucceeds(setDoc(ref, { starBase: 20, buildings: manyTypes, updatedAt: 500 }));
+    await assertSucceeds(
+      setDoc(ref, { starBase: 5, buildings: { walls: Array(500).fill(1) }, updatedAt: 500 }),
+    );
+  });
+
+  it("rejects unknown or missing keys", async () => {
+    const ref = doc(firestoreOf(testEnv.authenticatedContext("player-1")), COLONY_PATH);
+
+    await assertFails(setDoc(ref, { ...VALID_COLONY, extra: true }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, starBaseLevel: 5 }));
+    await assertFails(setDoc(ref, { buildings: {}, updatedAt: 500 }));
+    await assertFails(setDoc(ref, { starBase: 5, updatedAt: 500 }));
+    await assertFails(setDoc(ref, { starBase: 5, buildings: {} }));
+  });
+
+  it("rejects out-of-bounds or mistyped values", async () => {
+    const ref = doc(firestoreOf(testEnv.authenticatedContext("player-1")), COLONY_PATH);
+    const tooManyTypes = Object.fromEntries(
+      Array.from({ length: 31 }, (_, index) => [`type-${index}`, [1]]),
+    );
+
+    await assertFails(setDoc(ref, { ...VALID_COLONY, starBase: 0 }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, starBase: 21 }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, starBase: 5.5 }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, starBase: "5" }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, updatedAt: -1 }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, buildings: [] }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, buildings: { wall: 3 } }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, buildings: { wall: [0] } }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, buildings: { wall: [100] } }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, buildings: { wall: [2.5] } }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, buildings: { wall: ["3"] } }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, buildings: { walls: Array(501).fill(1) } }));
+    await assertFails(setDoc(ref, { ...VALID_COLONY, buildings: tooManyTypes }));
+  });
+
+  it("lets an owner delete their own Colony document", async () => {
+    const ref = doc(firestoreOf(testEnv.authenticatedContext("player-1")), COLONY_PATH);
+    await assertSucceeds(setDoc(ref, VALID_COLONY));
+
+    await assertSucceeds(deleteDoc(ref));
+  });
+});
