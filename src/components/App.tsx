@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AccountControl } from "./AccountControl";
 import { Modal } from "./Modal";
 import { NotificationsControl } from "./NotificationsControl";
-import { PlannerPlaceholder } from "./PlannerPlaceholder";
+import { PlannerPrototype } from "../prototype/planner/PlannerPrototype";
 import { TimerCard } from "./TimerCard";
 import { TimerChip, TimerChipSkeleton } from "./TimerChip";
 import type { AuthService } from "../auth/auth";
@@ -75,7 +75,7 @@ function App({ store, auth, now }: AppProps) {
           </div>
         </div>
 
-        <PlannerPlaceholder />
+        <PlannerPrototype />
       </main>
 
       {advancedDrop && (
