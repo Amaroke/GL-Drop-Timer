@@ -14,10 +14,21 @@ import {
   createMemoryDropStore,
   OLDEST_UPDATED_AT,
 } from "../store/dropStore";
+import {
+  createLocalStorageColonyStore,
+  createMemoryColonyStore,
+  type ColonyStore,
+} from "../store/colonyStore";
+import type { Catalog } from "../planner/catalog";
 import type { SyncStatus } from "../store/sendScheduler";
 
 const NOW = new Date("2026-01-01T12:00:00").getTime();
 const SIGNED_OUT_AUTH = createMemoryAuthService();
+const FIXTURE_CATALOG: Catalog = {
+  version: 1,
+  starBase: [1, 2, 3].map((level) => ({ level, time: null, cost: {}, requirements: {} })),
+  buildings: [],
+};
 
 function authServiceFrom(
   initial: AuthState,
@@ -98,34 +109,101 @@ describe("App", () => {
     });
   });
 
-  describe("Planner placeholder", () => {
-    it("shows 12 tabs for the main planet and every Colony slot, the main planet active by default", () => {
-      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+  describe("Planner", () => {
+    function renderPlanner(colonyStore: ColonyStore = createMemoryColonyStore()) {
+      return render(
+        <App
+          store={createMemoryDropStore()}
+          auth={SIGNED_OUT_AUTH}
+          now={() => NOW}
+          colonyStore={colonyStore}
+          catalog={FIXTURE_CATALOG}
+        />,
+      );
+    }
+
+    function starBaseSelect() {
+      return screen.getByRole("combobox", { name: "Star Base level" });
+    }
+
+    it("sits below the Drop timers on the same page, without page tabs", () => {
+      renderPlanner();
+
+      const timers = screen.getByRole("group", { name: "Star Battery timer" });
+      const planner = screen.getByRole("heading", { name: "Planner" });
+      expect(
+        timers.compareDocumentPosition(planner) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(screen.getAllByRole("tablist")).toHaveLength(1);
+      expect(screen.getByRole("tablist")).toHaveAccessibleName("Colonies");
+    });
+
+    it("always shows the twelve fixed Colonies, the main planet selected by default", () => {
+      renderPlanner();
 
       const tabs = screen.getAllByRole("tab");
       expect(tabs).toHaveLength(12);
-      expect(tabs[0]).toHaveAccessibleName("Planet");
+      expect(tabs[0]).toHaveTextContent("Main planet");
       expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+      for (let i = 1; i <= 11; i++) expect(tabs[i]).toHaveTextContent(`Colony ${i}`);
     });
 
-    it("switches the active tab when the player clicks another one", async () => {
-      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+    it("greys every other Colony and shows the Observatory level it requires", () => {
+      renderPlanner();
 
-      await userEvent.click(screen.getByRole("tab", { name: "Colony 1" }));
-
-      expect(screen.getByRole("tab", { name: "Colony 1" })).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
-      expect(screen.getByRole("tab", { name: "Planet" })).toHaveAttribute("aria-selected", "false");
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs[0]).toBeEnabled();
+      for (let i = 1; i <= 11; i++) {
+        expect(tabs[i]).toBeDisabled();
+        expect(tabs[i]).toHaveTextContent(`Requires Observatory level ${i}`);
+      }
     });
 
-    it("shows a preview table of Buildings under the active tab", () => {
-      render(<App store={createMemoryDropStore()} auth={SIGNED_OUT_AUTH} now={() => NOW} />);
+    it("starts a Colony without a saved Star Base at level 1, limited to the catalog levels", () => {
+      renderPlanner();
 
-      const panel = screen.getByRole("tabpanel");
-      expect(within(panel).getByRole("table")).toBeInTheDocument();
-      expect(screen.getByText(/preview/i)).toBeInTheDocument();
+      expect(starBaseSelect()).toHaveValue("1");
+      expect(
+        within(starBaseSelect())
+          .getAllByRole("option")
+          .map((option) => option.textContent),
+      ).toEqual(["1", "2", "3"]);
+    });
+
+    it("saves the Star Base level with an updated-at timestamp", async () => {
+      const colonyStore = createMemoryColonyStore();
+      renderPlanner(colonyStore);
+
+      await userEvent.selectOptions(starBaseSelect(), "3");
+
+      expect(starBaseSelect()).toHaveValue("3");
+      expect(colonyStore.get("main")).toEqual({ starBaseLevel: 3, updatedAt: NOW });
+    });
+
+    it("keeps the Star Base level after a reload", async () => {
+      const colonyStore = createMemoryColonyStore();
+      const { unmount } = renderPlanner(colonyStore);
+      await userEvent.selectOptions(starBaseSelect(), "2");
+      unmount();
+
+      renderPlanner(colonyStore);
+
+      expect(starBaseSelect()).toHaveValue("2");
+    });
+
+    describe("in the browser storage", () => {
+      beforeEach(() => localStorage.clear());
+      afterEach(() => localStorage.clear());
+
+      it("keeps the Star Base level after a reload", async () => {
+        const { unmount } = renderPlanner(createLocalStorageColonyStore());
+        await userEvent.selectOptions(starBaseSelect(), "3");
+        unmount();
+
+        renderPlanner(createLocalStorageColonyStore());
+
+        expect(starBaseSelect()).toHaveValue("3");
+      });
     });
   });
 
