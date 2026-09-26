@@ -6,14 +6,25 @@ import {
 } from "@firebase/rules-unit-testing";
 import { doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { createMemoryDropStore } from "./dropStore";
-import { mergeLocalIntoAccount } from "./syncedDropStore";
+import { mergeLocalIntoAccount } from "./accountSync";
+import { createMemoryColonyStore, type ColonyStore } from "./colonyStore";
+import { createMemoryDropStore, type DropStore } from "./dropStore";
 
 function firestoreOf(context: RulesTestContext): Firestore {
   return context.firestore() as unknown as Firestore;
 }
 
 const KEYS = ["gl-timer-star-battery", "gl-timer-tool-case"];
+const COLONY_IDS = ["main", "colony-1"];
+
+function merge(db: Firestore, local: { drops?: DropStore; colonies?: ColonyStore }): Promise<void> {
+  return mergeLocalIntoAccount(db, "player-1", {
+    drops: local.drops ?? createMemoryDropStore(),
+    colonies: local.colonies ?? createMemoryColonyStore(),
+    dropKeys: KEYS,
+    colonyIds: COLONY_IDS,
+  });
+}
 
 let testEnv: RulesTestEnvironment;
 
@@ -32,13 +43,13 @@ afterEach(async () => {
   await testEnv.clearFirestore();
 });
 
-describe("mergeLocalIntoAccount", () => {
+describe("mergeLocalIntoAccount drops", () => {
   it("writes the local value when the account has no document yet", async () => {
     const db = firestoreOf(testEnv.authenticatedContext("player-1"));
     const localStore = createMemoryDropStore();
     localStore.set("gl-timer-star-battery", 1000, 500);
 
-    await mergeLocalIntoAccount(db, "player-1", localStore, KEYS);
+    await merge(db, { drops: localStore });
 
     const snapshot = await getDoc(doc(db, "users/player-1/drops/gl-timer-star-battery"));
     expect(snapshot.data()).toEqual({ readyAt: 1000, updatedAt: 500 });
@@ -53,7 +64,7 @@ describe("mergeLocalIntoAccount", () => {
     const localStore = createMemoryDropStore();
     localStore.set("gl-timer-star-battery", 1000, 500);
 
-    await mergeLocalIntoAccount(db, "player-1", localStore, KEYS);
+    await merge(db, { drops: localStore });
 
     const snapshot = await getDoc(doc(db, "users/player-1/drops/gl-timer-star-battery"));
     expect(snapshot.data()).toEqual({ readyAt: 1000, updatedAt: 500 });
@@ -68,7 +79,7 @@ describe("mergeLocalIntoAccount", () => {
     const localStore = createMemoryDropStore();
     localStore.set("gl-timer-star-battery", 1000, 500);
 
-    await mergeLocalIntoAccount(db, "player-1", localStore, KEYS);
+    await merge(db, { drops: localStore });
 
     const snapshot = await getDoc(doc(db, "users/player-1/drops/gl-timer-star-battery"));
     expect(snapshot.data()).toEqual({ readyAt: 2000, updatedAt: 900 });
@@ -83,7 +94,7 @@ describe("mergeLocalIntoAccount", () => {
     const localStore = createMemoryDropStore();
     localStore.set("gl-timer-star-battery", 1000, 500);
 
-    await mergeLocalIntoAccount(db, "player-1", localStore, KEYS);
+    await merge(db, { drops: localStore });
 
     const snapshot = await getDoc(doc(db, "users/player-1/drops/gl-timer-star-battery"));
     expect(snapshot.data()).toEqual({ readyAt: 2000, updatedAt: 500 });
@@ -93,7 +104,7 @@ describe("mergeLocalIntoAccount", () => {
     const db = firestoreOf(testEnv.authenticatedContext("player-1"));
     const localStore = createMemoryDropStore();
 
-    await mergeLocalIntoAccount(db, "player-1", localStore, KEYS);
+    await merge(db, { drops: localStore });
 
     const snapshot = await getDoc(doc(db, "users/player-1/drops/gl-timer-star-battery"));
     expect(snapshot.exists()).toBe(false);
@@ -109,11 +120,73 @@ describe("mergeLocalIntoAccount", () => {
     localStore.set("gl-timer-star-battery", 1000, 500);
     localStore.set("gl-timer-tool-case", 3000, 100);
 
-    await mergeLocalIntoAccount(db, "player-1", localStore, KEYS);
+    await merge(db, { drops: localStore });
 
     const starBattery = await getDoc(doc(db, "users/player-1/drops/gl-timer-star-battery"));
     const toolCase = await getDoc(doc(db, "users/player-1/drops/gl-timer-tool-case"));
     expect(starBattery.data()).toEqual({ readyAt: 1000, updatedAt: 500 });
     expect(toolCase.data()).toEqual({ readyAt: 8000, updatedAt: 900 });
+  });
+});
+
+describe("mergeLocalIntoAccount colonies", () => {
+  const MAIN = "users/player-1/colonies/main";
+
+  function localColonies(starBaseLevel: number, updatedAt: number) {
+    const colonies = createMemoryColonyStore();
+    colonies.set("main", { starBaseLevel, buildings: { "gold-mine": [3, 1] }, updatedAt });
+    return colonies;
+  }
+
+  it("imports a local Colony the account does not have yet", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+
+    await merge(db, { colonies: localColonies(4, 500) });
+
+    const snapshot = await getDoc(doc(db, MAIN));
+    expect(snapshot.data()).toEqual({
+      starBase: 4,
+      buildings: { "gold-mine": [3, 1] },
+      updatedAt: 500,
+    });
+  });
+
+  it("imports a local Colony more recent than the account one", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+    await setDoc(doc(db, MAIN), { starBase: 2, buildings: {}, updatedAt: 100 });
+
+    await merge(db, { colonies: localColonies(4, 500) });
+
+    const snapshot = await getDoc(doc(db, MAIN));
+    expect(snapshot.data()).toMatchObject({ starBase: 4, updatedAt: 500 });
+  });
+
+  it("keeps the account Colony when it is more recent than the local one", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+    await setDoc(doc(db, MAIN), { starBase: 7, buildings: {}, updatedAt: 900 });
+
+    await merge(db, { colonies: localColonies(4, 500) });
+
+    const snapshot = await getDoc(doc(db, MAIN));
+    expect(snapshot.data()).toEqual({ starBase: 7, buildings: {}, updatedAt: 900 });
+  });
+
+  it("keeps the account Colony when both share the same updated-at", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+    await setDoc(doc(db, MAIN), { starBase: 7, buildings: {}, updatedAt: 500 });
+
+    await merge(db, { colonies: localColonies(4, 500) });
+
+    const snapshot = await getDoc(doc(db, MAIN));
+    expect(snapshot.data()).toEqual({ starBase: 7, buildings: {}, updatedAt: 500 });
+  });
+
+  it("leaves a Colony with no local value untouched", async () => {
+    const db = firestoreOf(testEnv.authenticatedContext("player-1"));
+
+    await merge(db, { colonies: localColonies(4, 500) });
+
+    const snapshot = await getDoc(doc(db, "users/player-1/colonies/colony-1"));
+    expect(snapshot.exists()).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import type { Firestore } from "firebase/firestore";
 import { toColonyEntry, type ColonyEntry, type ColonyStore } from "./colonyStore";
-import { createFirestoreDocumentStore } from "./firestoreDocumentStore";
+import { createFirestoreDocumentStore, type DocumentCodec } from "./firestoreDocumentStore";
 import type { SendScheduler, SyncStatusStore } from "./sendScheduler";
 
 export type FirestoreColonyStore = ColonyStore & {
@@ -14,23 +14,19 @@ function fromDocument(data: unknown): ColonyEntry | null {
   return toColonyEntry({ starBaseLevel: starBase, buildings, updatedAt });
 }
 
+export const COLONY_CODEC: DocumentCodec<ColonyEntry> = {
+  fromDocument,
+  toDocument: ({ starBaseLevel, buildings, updatedAt }) => ({
+    starBase: starBaseLevel,
+    buildings,
+    updatedAt,
+  }),
+};
+
 export function createFirestoreColonyStore(
   db: Firestore,
   uid: string,
   scheduler: SendScheduler,
 ): FirestoreColonyStore {
-  return createFirestoreDocumentStore<ColonyEntry>(
-    db,
-    uid,
-    "colonies",
-    {
-      fromDocument,
-      toDocument: ({ starBaseLevel, buildings, updatedAt }) => ({
-        starBase: starBaseLevel,
-        buildings,
-        updatedAt,
-      }),
-    },
-    scheduler,
-  );
+  return createFirestoreDocumentStore<ColonyEntry>(db, uid, "colonies", COLONY_CODEC, scheduler);
 }
