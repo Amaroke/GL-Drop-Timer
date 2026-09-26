@@ -1,9 +1,16 @@
-import { limitsAt, groupedBuildingsForColony } from "./buildings";
-import { CATEGORIES, type BuildingType, type Catalog, type Category, type Cost } from "./catalog";
+import { limitsAt, groupedBuildingsForColony, sharedLevel } from "./buildings";
+import {
+  addCosts,
+  scaleCost,
+  type BuildingType,
+  type Catalog,
+  type Category,
+  type Cost,
+} from "./catalog";
 import { instanceStatus } from "./statuses";
 import type { ColonyBuildings } from "../store/colonyStore";
 
-export type StepOrder = "category" | "fastest";
+export type StepOrder = "fastest" | "longest";
 
 export type NextStep = {
   kind: "build" | "upgrade";
@@ -11,6 +18,8 @@ export type NextStep = {
   typeName: string;
   category: Category;
   instance: number;
+  count: number;
+  shared: boolean;
   targetLevel: number;
   time: string | null;
   seconds: number | null;
@@ -34,6 +43,16 @@ export function parseDuration(time: string | null): number | null {
   return total;
 }
 
+export function formatDuration(seconds: number): string {
+  let rest = seconds;
+  const parts = Object.entries(UNIT_SECONDS).flatMap(([unit, size]) => {
+    const amount = Math.floor(rest / size);
+    rest -= amount * size;
+    return amount > 0 ? [`${amount}${unit}`] : [];
+  });
+  return parts.length > 0 ? parts.join(" ") : "0s";
+}
+
 function stepFor(
   type: BuildingType,
   kind: NextStep["kind"],
@@ -48,6 +67,8 @@ function stepFor(
     typeName: type.name,
     category: type.category,
     instance,
+    count: 1,
+    shared: false,
     targetLevel,
     time,
     seconds: parseDuration(time),
@@ -68,15 +89,66 @@ function stepsForType(type: BuildingType, starBaseLevel: number, levels: number[
   return [...upgrades, ...builds];
 }
 
-function compareTime(a: NextStep, b: NextStep): number {
-  if (a.seconds === b.seconds) return 0;
-  if (a.seconds === null) return 1;
-  if (b.seconds === null) return -1;
-  return a.seconds - b.seconds;
+function sharedStep(
+  type: BuildingType,
+  kind: NextStep["kind"],
+  count: number,
+  fromLevel: number,
+  targetLevel: number,
+): NextStep {
+  const infos = type.levels.filter(
+    (entry) => entry.level >= fromLevel && entry.level <= targetLevel,
+  );
+  const perBuilding = infos.map((entry) => parseDuration(entry.time));
+  const seconds = perBuilding.includes(null)
+    ? null
+    : perBuilding.reduce<number>((sum, value) => sum + (value ?? 0), 0) * count;
+  return {
+    kind,
+    typeId: type.id,
+    typeName: type.name,
+    category: type.category,
+    instance: 1,
+    count,
+    shared: true,
+    targetLevel,
+    time: seconds === null ? null : formatDuration(seconds),
+    seconds,
+    cost: scaleCost(
+      infos.reduce<Cost>((sum, entry) => addCosts(sum, entry.cost), {}),
+      count,
+    ),
+  };
 }
 
-function compareCategoryThenTime(a: NextStep, b: NextStep): number {
-  return CATEGORIES.indexOf(a.category) - CATEGORIES.indexOf(b.category) || compareTime(a, b);
+function sharedStepsForType(
+  type: BuildingType,
+  starBaseLevel: number,
+  levels: number[],
+): NextStep[] {
+  const limits = limitsAt(type, starBaseLevel);
+  const level = sharedLevel(levels);
+  const owned = levels.length;
+  const missing = limits.maxCount - levels.length;
+  const steps: NextStep[] = [];
+  if (owned > 0 && level < limits.maxLevel) {
+    steps.push(sharedStep(type, "upgrade", owned, level + 1, level + 1));
+  }
+  if (missing > 0) steps.push(sharedStep(type, "build", missing, 1, level));
+  return steps;
+}
+
+const KIND_RANK: Record<NextStep["kind"], number> = { build: 0, upgrade: 1 };
+
+function comparator(order: StepOrder) {
+  const direction = order === "fastest" ? 1 : -1;
+  return (a: NextStep, b: NextStep): number => {
+    const byKind = KIND_RANK[a.kind] - KIND_RANK[b.kind];
+    if (byKind !== 0 || a.seconds === b.seconds) return byKind;
+    if (a.seconds === null) return 1;
+    if (b.seconds === null) return -1;
+    return (a.seconds - b.seconds) * direction;
+  };
 }
 
 export function nextSteps(
@@ -85,9 +157,17 @@ export function nextSteps(
   starBaseLevel: number,
   buildings: ColonyBuildings,
   order: StepOrder,
+  category: Category | null = null,
 ): NextStep[] {
   return groupedBuildingsForColony(catalog, colonyId)
     .flatMap((group) => group.types)
-    .flatMap((type) => stepsForType(type, starBaseLevel, buildings[type.id] ?? []))
-    .sort(order === "fastest" ? compareTime : compareCategoryThenTime);
+    .filter((type) => category === null || type.category === category)
+    .flatMap((type) =>
+      (type.sharedLevel ? sharedStepsForType : stepsForType)(
+        type,
+        starBaseLevel,
+        buildings[type.id] ?? [],
+      ),
+    )
+    .sort(comparator(order));
 }

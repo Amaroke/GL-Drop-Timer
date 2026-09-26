@@ -1,15 +1,26 @@
+import type { ReactNode } from "react";
 import { NumberField } from "./NumberField";
 import { Tooltip } from "./Tooltip";
 import { formatLevelInfo } from "../lib/costFormat";
-import type { BuildingType } from "../planner/catalog";
+import { scaleCost, type BuildingType } from "../planner/catalog";
 import {
   limitsAt,
   MIN_LEVEL,
+  sharedLevel,
   withCount,
   withLevel,
+  withSharedCount,
+  withSharedLevel,
   type CategoryGroup,
 } from "../planner/buildings";
-import { instanceStatus, typeStatuses, unlocksAt, type TypeStatus } from "../planner/statuses";
+import { formatDuration, parseDuration } from "../planner/nextSteps";
+import {
+  instanceStatus,
+  typeStatuses,
+  unlocksAt,
+  type InstanceStatus,
+  type TypeStatus,
+} from "../planner/statuses";
 import type { ColonyBuildings } from "../store/colonyStore";
 
 const STATUS_LABELS: Record<TypeStatus, string> = {
@@ -40,6 +51,43 @@ function StatusBadge({ status, label }: { status: TypeStatus; label?: string }) 
 function nextLevelText(type: BuildingType, level: number): string {
   const next = type.levels.find((info) => info.level === level + 1);
   return next ? `Next level ${next.level}: ${formatLevelInfo(next)}` : "No next level";
+}
+
+function nextSharedLevelText(type: BuildingType, level: number, count: number): string {
+  const next = type.levels.find((info) => info.level === level + 1);
+  if (!next) return "No next level";
+  const seconds = parseDuration(next.time);
+  return `Next level ${next.level} for ${count} ${type.name}: ${formatLevelInfo({
+    ...next,
+    time: seconds === null ? null : formatDuration(seconds * count),
+    cost: scaleCost(next.cost, count),
+  })}`;
+}
+
+const CHIP_STYLES: Record<InstanceStatus | "maxed", string> = {
+  "below-limit": "border-blue-400/40 bg-blue-500/10",
+  "over-limit": "border-red-400/50 bg-red-500/10",
+  maxed: "border-green-400/40 bg-green-500/10",
+};
+
+type LevelChipProps = {
+  status: InstanceStatus | null;
+  statusLabel?: string;
+  tooltip: string;
+  children: (tooltipId: string | undefined) => ReactNode;
+};
+
+function LevelChip({ status, statusLabel, tooltip, children }: LevelChipProps) {
+  return (
+    <span className={`rounded-lg border px-1 py-0.5 ${CHIP_STYLES[status ?? "maxed"]}`}>
+      {status && statusLabel && (
+        <span aria-label={statusLabel} className="sr-only">
+          {STATUS_LABELS[status]}
+        </span>
+      )}
+      <Tooltip text={tooltip}>{children}</Tooltip>
+    </span>
+  );
 }
 
 type BuildingsListProps = {
@@ -90,44 +138,76 @@ export function BuildingsList({ groups, starBaseLevel, buildings, onChange }: Bu
                         </span>
                       )}
                     </div>
-                    <NumberField
-                      label={`${type.name} owned`}
-                      value={levels.length}
-                      min={0}
-                      max={limits.maxCount}
-                      onCommit={(count) => onChange(type.id, withCount(levels, count))}
-                    />
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs uppercase tracking-wide text-white/40">Owned</span>
+                      <NumberField
+                        label={`${type.name} owned`}
+                        value={levels.length}
+                        min={0}
+                        max={limits.maxCount}
+                        onCommit={(count) =>
+                          onChange(
+                            type.id,
+                            type.sharedLevel
+                              ? withSharedCount(levels, count)
+                              : withCount(levels, count),
+                          )
+                        }
+                      />
+                    </span>
                   </div>
-                  {levels.map((level, index) => {
-                    const status = instanceStatus(limits, index, level);
-                    return (
-                      <div key={index} className="flex items-center justify-between gap-2 pl-4">
-                        <span className="text-xs text-white/50">Level</span>
-                        <span className="flex items-center gap-2">
-                          {status && (
-                            <StatusBadge
-                              status={status}
-                              label={`${type.name} ${index + 1} status`}
-                            />
-                          )}
-                          <Tooltip text={nextLevelText(type, level)}>
+                  {levels.length > 0 && (
+                    <div className="flex flex-col gap-2 border-t border-white/10 pt-2">
+                      <span className="text-xs uppercase tracking-wide text-white/40">
+                        {type.sharedLevel ? "Shared level" : "Levels"} (max {limits.maxLevel})
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {type.sharedLevel ? (
+                          <LevelChip
+                            status={instanceStatus(limits, 0, sharedLevel(levels))}
+                            tooltip={nextSharedLevelText(type, sharedLevel(levels), levels.length)}
+                          >
                             {(tooltipId) => (
                               <NumberField
-                                label={`${type.name} ${index + 1} level`}
-                                value={level}
+                                compact
+                                label={`${type.name} level`}
+                                value={sharedLevel(levels)}
                                 min={MIN_LEVEL}
                                 max={limits.maxLevel}
                                 describedBy={tooltipId}
                                 onCommit={(next) =>
-                                  onChange(type.id, withLevel(levels, index, next))
+                                  onChange(type.id, withSharedLevel(levels, next))
                                 }
                               />
                             )}
-                          </Tooltip>
-                        </span>
+                          </LevelChip>
+                        ) : (
+                          levels.map((level, index) => (
+                            <LevelChip
+                              key={index}
+                              status={instanceStatus(limits, index, level)}
+                              statusLabel={`${type.name} ${index + 1} status`}
+                              tooltip={nextLevelText(type, level)}
+                            >
+                              {(tooltipId) => (
+                                <NumberField
+                                  compact
+                                  label={`${type.name} ${index + 1} level`}
+                                  value={level}
+                                  min={MIN_LEVEL}
+                                  max={limits.maxLevel}
+                                  describedBy={tooltipId}
+                                  onCommit={(next) =>
+                                    onChange(type.id, withLevel(levels, index, next))
+                                  }
+                                />
+                              )}
+                            </LevelChip>
+                          ))
+                        )}
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
                 </div>
               );
             })}

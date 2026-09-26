@@ -1,18 +1,24 @@
 import { useId, useState } from "react";
 import { Tooltip } from "./Tooltip";
 import { formatCost, formatTime } from "../lib/costFormat";
-import type { Catalog } from "../planner/catalog";
+import { CATEGORIES, type Catalog, type Category } from "../planner/catalog";
 import { nextSteps, type NextStep, type StepOrder } from "../planner/nextSteps";
 import type { ColonyBuildings } from "../store/colonyStore";
 
 const COLLAPSED_COUNT = 5;
 
 const ORDER_LABELS: Record<StepOrder, string> = {
-  category: "Category then time",
   fastest: "Fastest first",
+  longest: "Longest first",
 };
 
+const ALL_CATEGORIES = "all";
+const SELECT_CLASS =
+  "rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white";
+
 function stepLabel(step: NextStep): string {
+  if (step.kind === "build" && step.shared) return `Build ${step.count} ${step.typeName}`;
+  if (step.shared) return `Upgrade ${step.count} ${step.typeName} to level ${step.targetLevel}`;
   return step.kind === "build"
     ? `Build ${step.typeName} ${step.instance}`
     : `Upgrade ${step.typeName} ${step.instance} to level ${step.targetLevel}`;
@@ -55,17 +61,39 @@ type NextStepsProps = {
 };
 
 export function NextSteps({ catalog, colonyId, starBaseLevel, buildings, onDone }: NextStepsProps) {
-  const [order, setOrder] = useState<StepOrder>("category");
+  const [order, setOrder] = useState<StepOrder>("fastest");
+  const [category, setCategory] = useState<Category | null>(null);
   const [expanded, setExpanded] = useState(false);
   const selectId = useId();
-  const steps = nextSteps(catalog, colonyId, starBaseLevel, buildings, order);
+  const categoryId = useId();
+  const steps = nextSteps(catalog, colonyId, starBaseLevel, buildings, order, category);
   const shown = expanded ? steps : steps.slice(0, COLLAPSED_COUNT);
 
   return (
     <section aria-label="Next steps" className="mt-6">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-white/50">Next steps</h3>
-        <span className="flex items-center gap-2">
+        <span className="flex flex-wrap items-center gap-2">
+          <label htmlFor={categoryId} className="text-sm text-white/60">
+            Category
+          </label>
+          <select
+            id={categoryId}
+            value={category ?? ALL_CATEGORIES}
+            onChange={(event) =>
+              setCategory(
+                event.target.value === ALL_CATEGORIES ? null : (event.target.value as Category),
+              )
+            }
+            className={SELECT_CLASS}
+          >
+            <option value={ALL_CATEGORIES}>All categories</option>
+            {CATEGORIES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
           <label htmlFor={selectId} className="text-sm text-white/60">
             Order
           </label>
@@ -73,7 +101,7 @@ export function NextSteps({ catalog, colonyId, starBaseLevel, buildings, onDone 
             id={selectId}
             value={order}
             onChange={(event) => setOrder(event.target.value as StepOrder)}
-            className="rounded-lg border border-white/15 bg-[#120c24] px-3 py-1.5 text-sm text-white"
+            className={SELECT_CLASS}
           >
             {(Object.keys(ORDER_LABELS) as StepOrder[]).map((value) => (
               <option key={value} value={value}>

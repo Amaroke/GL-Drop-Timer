@@ -21,6 +21,7 @@ export type BuildingType = {
   name: string;
   category: Category;
   mainOnly: boolean;
+  sharedLevel?: boolean;
   unlocks: Unlock[];
   levels: LevelInfo[];
 };
@@ -34,5 +35,17 @@ export type Catalog = {
   starBase: StarBaseLevel[];
   buildings: BuildingType[];
 };
+
+export function addCosts(a: Cost, b: Cost): Cost {
+  const sum = { ...a };
+  for (const [currency, amount] of Object.entries(b)) sum[currency] = (sum[currency] ?? 0) + amount;
+  return sum;
+}
+
+export function scaleCost(cost: Cost, factor: number): Cost {
+  return Object.fromEntries(
+    Object.entries(cost).map(([currency, amount]) => [currency, amount * factor]),
+  );
+}
 
 export const CATALOG: Catalog = raw as Catalog;
