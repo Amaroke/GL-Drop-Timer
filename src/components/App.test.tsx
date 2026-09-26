@@ -208,20 +208,131 @@ describe("App", () => {
 
       const tabs = screen.getAllByRole("tab");
       expect(tabs).toHaveLength(12);
-      expect(tabs[0]).toHaveTextContent("Main planet");
       expect(tabs[0]).toHaveAttribute("aria-selected", "true");
-      for (let i = 1; i <= 11; i++) expect(tabs[i]).toHaveTextContent(`Colony ${i}`);
+      expect(tabs.map((tab) => tab.textContent)).toEqual([
+        "Main",
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th",
+        "9th",
+        "10th",
+        "11th",
+      ]);
+      expect(tabs[0]).toHaveAccessibleName("Main planet");
+      for (let i = 1; i <= 11; i++) expect(tabs[i]).toHaveAccessibleName(`Colony ${i}`);
     });
 
-    it("greys every other Colony and shows the Observatory level it requires", () => {
+    it("greys every other Colony", () => {
       renderPlanner();
 
       const tabs = screen.getAllByRole("tab");
       expect(tabs[0]).toBeEnabled();
-      for (let i = 1; i <= 11; i++) {
-        expect(tabs[i]).toBeDisabled();
-        expect(tabs[i]).toHaveTextContent(`Requires Observatory level ${i}`);
+      for (let i = 1; i <= 11; i++) expect(tabs[i]).toBeDisabled();
+    });
+
+    describe("Observatory", () => {
+      function tab(name: string) {
+        return screen.getByRole("tab", { name });
       }
+
+      it("unlocks Colonies one per Observatory level, in order", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { observatory: [3] });
+        renderPlanner(colonyStore);
+
+        const tabs = screen.getAllByRole("tab");
+        expect(tabs[0]).toBeEnabled();
+        for (let i = 1; i <= 3; i++) expect(tabs[i]).toBeEnabled();
+        for (let i = 4; i <= 11; i++) expect(tabs[i]).toBeDisabled();
+      });
+
+      it("unlocks a Colony as soon as the Observatory level is raised in the Planner", async () => {
+        renderPlanner();
+        expect(tab("Colony 1")).toBeDisabled();
+
+        await click("Increase Observatory owned");
+        expect(tab("Colony 1")).toBeEnabled();
+        expect(tab("Colony 2")).toBeDisabled();
+
+        await click("Increase Observatory 1 level");
+
+        expect(tab("Colony 2")).toBeEnabled();
+        expect(tab("Colony 3")).toBeDisabled();
+      });
+
+      it("lets the player edit an unlocked Colony", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { observatory: [1] });
+        renderPlanner(colonyStore);
+
+        await userEvent.click(tab("Colony 1"));
+        await userEvent.selectOptions(starBaseSelect(), "2");
+
+        expect(tab("Colony 1")).toHaveAttribute("aria-selected", "true");
+        expect(colonyStore.get("colony-1")).toEqual({
+          starBaseLevel: 2,
+          buildings: {},
+          updatedAt: NOW,
+        });
+      });
+
+      it("relocks Colonies when the Observatory level is lowered", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, { observatory: [3] });
+        renderPlanner(colonyStore);
+
+        await click("Decrease Observatory 1 level");
+
+        expect(tab("Colony 2")).toBeEnabled();
+        expect(tab("Colony 3")).toBeDisabled();
+      });
+
+      it("relocks every Colony when the Observatory is removed", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, { observatory: [2] });
+        renderPlanner(colonyStore);
+
+        await click("Decrease Observatory owned");
+
+        expect(tab("Colony 1")).toBeDisabled();
+        expect(tab("Colony 2")).toBeDisabled();
+      });
+
+      it("keeps the data of a relocked Colony and shows it again once unlocked", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, { observatory: [1] });
+        const colonyData = { starBaseLevel: 2, buildings: { mine: [2, 1] }, updatedAt: 7 };
+        colonyStore.set("colony-1", colonyData);
+        renderPlanner(colonyStore);
+
+        await click("Decrease Observatory owned");
+        expect(tab("Colony 1")).toBeDisabled();
+        expect(colonyStore.get("colony-1")).toEqual(colonyData);
+
+        await click("Increase Observatory owned");
+        await click("Increase Observatory 1 level");
+        await userEvent.click(tab("Colony 1"));
+
+        expect(starBaseSelect()).toHaveValue("2");
+        expect(levelsOf("Mine")).toEqual(["2", "1"]);
+      });
+
+      it("shows the main planet again when the selected Colony gets relocked", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { observatory: [2] });
+        renderPlanner(colonyStore);
+        await userEvent.click(tab("Colony 2"));
+
+        act(() => seed(colonyStore, 1, { observatory: [1] }));
+
+        expect(tab("Colony 2")).toBeDisabled();
+        expect(tab("Main planet")).toHaveAttribute("aria-selected", "true");
+      });
     });
 
     it("starts a Colony without a saved Star Base at level 1, limited to the catalog levels", () => {
