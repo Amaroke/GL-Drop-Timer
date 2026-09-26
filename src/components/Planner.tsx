@@ -164,7 +164,7 @@ function ColonyTab({ colony, store, catalog, unlocked, selected, onSelect }: Col
       <div
         role="group"
         aria-label={`${colony.name} progress`}
-        className="relative flex w-full flex-col items-center gap-0.5"
+        className="pointer-events-none flex w-full flex-col items-center gap-0.5"
       >
         <div
           role="progressbar"
