@@ -64,6 +64,11 @@ const FIXTURE_CATALOG: Catalog = {
       [2, 2],
       [3, 3],
     ]),
+    fixtureType("laser", "Laser", "Tower", false, [
+      [0, 0],
+      [0, 0],
+      [1, 3],
+    ]),
   ],
 };
 
@@ -404,7 +409,7 @@ describe("App", () => {
         const names = within(screen.getByRole("tabpanel"))
           .getAllByRole("group")
           .map((group) => group.getAttribute("aria-label"));
-        expect(names).toEqual(["Observatory", "Mine", "Cannon"]);
+        expect(names).toEqual(["Observatory", "Mine", "Cannon", "Laser"]);
       });
 
       it("shows the owned count against the maximum count of the Star Base", () => {
@@ -623,6 +628,138 @@ describe("App", () => {
         renderPlanner(colonyStore);
 
         expect(levelsOf("Mine")).toEqual(["1", "1"]);
+      });
+    });
+
+    describe("statuses", () => {
+      function statusesOf(name: string) {
+        return within(screen.getByRole("group", { name }))
+          .queryAllByRole("listitem")
+          .map((item) => item.textContent);
+      }
+
+      function instanceStatusOf(name: string, index: number) {
+        return within(screen.getByRole("group", { name })).queryByLabelText(
+          `${name} ${index} status`,
+        )?.textContent;
+      }
+
+      function typeNames() {
+        return within(screen.getByRole("tabpanel"))
+          .queryAllByRole("group")
+          .map((group) => group.getAttribute("aria-label"));
+      }
+
+      it("flags a type Missing when the owned count is below the maximum count", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [3] });
+        renderPlanner(colonyStore);
+
+        expect(statusesOf("Mine")).toEqual(["To construct"]);
+        expect(statusesOf("Cannon")).toEqual(["To construct"]);
+      });
+
+      it("flags a Building below the maximum level as Below limit", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [3, 2] });
+        renderPlanner(colonyStore);
+
+        expect(statusesOf("Mine")).toEqual(["To upgrade"]);
+        expect(instanceStatusOf("Mine", 1)).toBeUndefined();
+        expect(instanceStatusOf("Mine", 2)).toBe("To upgrade");
+      });
+
+      it("flags a type Maxed when nothing is left to build or upgrade", () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [3, 3] });
+        renderPlanner(colonyStore);
+
+        expect(statusesOf("Mine")).toEqual(["Maxed"]);
+      });
+
+      it("updates the statuses as soon as a level is raised", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 1, { mine: [3, 2] });
+        renderPlanner(colonyStore);
+
+        await click("Increase Mine 2 level");
+
+        expect(statusesOf("Mine")).toEqual(["Maxed"]);
+      });
+
+      it("flags what exceeds the limits Over limit when the Star Base level is lowered, and keeps it", async () => {
+        const colonyStore = createMemoryColonyStore();
+        seed(colonyStore, 3, { mine: [6, 5, 4, 1] });
+        renderPlanner(colonyStore);
+        expect(statusesOf("Mine")).toEqual(["To upgrade"]);
+
+        await userEvent.selectOptions(starBaseSelect(), "1");
+
+        expect(statusesOf("Mine")).toEqual(["Over limit"]);
+        expect(instanceStatusOf("Mine", 1)).toBe("Over limit");
+        expect(instanceStatusOf("Mine", 3)).toBe("Over limit");
+        expect(instanceStatusOf("Mine", 4)).toBe("Over limit");
+        expect(colonyStore.get("main")?.buildings).toEqual({ mine: [6, 5, 4, 1] });
+      });
+
+      it("shows when a type unlocks and never flags it Missing before", async () => {
+        renderPlanner();
+
+        const laser = within(screen.getByRole("group", { name: "Laser" }));
+        expect(laser.getByText("Unlocks at Star Base 3")).toBeInTheDocument();
+        expect(statusesOf("Laser")).toEqual([]);
+
+        await userEvent.selectOptions(starBaseSelect(), "3");
+
+        expect(laser.queryByText(/Unlocks at Star Base/)).toBeNull();
+        expect(statusesOf("Laser")).toEqual(["To construct"]);
+      });
+
+      describe("upgrade filter", () => {
+        const filter = () => screen.getByRole("checkbox", { name: "Only what to upgrade" });
+
+        it("shows every type until the filter is switched on", () => {
+          renderPlanner();
+
+          expect(filter()).not.toBeChecked();
+          expect(typeNames()).toEqual(["Observatory", "Mine", "Cannon", "Laser"]);
+        });
+
+        it("lists only the types to build or upgrade", async () => {
+          const colonyStore = createMemoryColonyStore();
+          seed(colonyStore, 1, { observatory: [2], mine: [3, 3] });
+          renderPlanner(colonyStore);
+
+          await userEvent.click(filter());
+
+          expect(typeNames()).toEqual(["Cannon"]);
+        });
+
+        it("hides the categories left empty and brings everything back when switched off", async () => {
+          const colonyStore = createMemoryColonyStore();
+          seed(colonyStore, 1, { observatory: [2], mine: [3, 3], cannon: [1] });
+          renderPlanner(colonyStore);
+
+          await userEvent.click(filter());
+
+          expect(typeNames()).toEqual([]);
+          expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
+
+          await userEvent.click(filter());
+
+          expect(typeNames()).toEqual(["Observatory", "Mine", "Cannon", "Laser"]);
+        });
+
+        it("drops a type that is only Over limit and keeps one Below limit", async () => {
+          const colonyStore = createMemoryColonyStore();
+          seed(colonyStore, 3, { observatory: [6], mine: [3, 2], cannon: [3, 3, 1] });
+          renderPlanner(colonyStore);
+          await userEvent.selectOptions(starBaseSelect(), "1");
+
+          await userEvent.click(filter());
+
+          expect(typeNames()).toEqual(["Mine"]);
+        });
       });
     });
   });
