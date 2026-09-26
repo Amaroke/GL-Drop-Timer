@@ -1,6 +1,7 @@
 import raw from "./data/catalog.json";
 
 export type Category = "Resource" | "Military" | "Tower" | "Defense";
+export const CATEGORIES: Category[] = ["Resource", "Military", "Tower", "Defense"];
 export type Cost = Record<string, number>;
 
 export type LevelInfo = {
