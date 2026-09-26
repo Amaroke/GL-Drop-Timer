@@ -530,7 +530,7 @@
       "id": "refinery",
       "name": "Refinery",
       "category": "Resource",
-      "mainOnly": false,
+      "mainOnly": true,
       "unlocks": [
         {
           "starBase": 1,
@@ -687,12 +687,12 @@
         },
         {
           "starBase": 4,
-          "maxLevel": 3,
+          "maxLevel": 2,
           "maxCount": 2
         },
         {
           "starBase": 5,
-          "maxLevel": 3,
+          "maxLevel": 2,
           "maxCount": 2
         },
         {
@@ -948,7 +948,7 @@
       "id": "laboratory",
       "name": "Laboratory",
       "category": "Military",
-      "mainOnly": true,
+      "mainOnly": false,
       "unlocks": [
         {
           "starBase": 1,

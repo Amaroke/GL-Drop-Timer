@@ -23,6 +23,28 @@ import type { ColonyBuildings, ColonyEntry, ColonyStore } from "../store/colonyS
 
 const DEFAULT_STAR_BASE_LEVEL = 1;
 const NO_BUILDINGS: ColonyBuildings = {};
+const ONLY_TO_UPGRADE_KEY = "gl-planner-only-to-upgrade";
+
+function useOnlyToUpgrade(): [boolean, (value: boolean) => void] {
+  const [value, setValue] = useState(() => {
+    try {
+      return localStorage.getItem(ONLY_TO_UPGRADE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  function update(next: boolean) {
+    setValue(next);
+    try {
+      localStorage.setItem(ONLY_TO_UPGRADE_KEY, String(next));
+    } catch {
+      return;
+    }
+  }
+
+  return [value, update];
+}
 
 type PlannerProps = {
   store: ColonyStore;
@@ -42,7 +64,7 @@ function ColonyPanel({ colony, store, catalog, now }: PlannerProps & { colony: C
   const entry = useColonyEntry(store, colony.id);
   const starBaseLevel = entry?.starBaseLevel ?? DEFAULT_STAR_BASE_LEVEL;
   const buildings = entry?.buildings ?? NO_BUILDINGS;
-  const [onlyToUpgrade, setOnlyToUpgrade] = useState(false);
+  const [onlyToUpgrade, setOnlyToUpgrade] = useOnlyToUpgrade();
   const allGroups = groupedBuildingsForColony(catalog, colony.id);
   const groups = onlyToUpgrade ? filterToUpgrade(allGroups, starBaseLevel, buildings) : allGroups;
   const selectId = `star-base-level-${colony.id}`;

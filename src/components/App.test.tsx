@@ -724,6 +724,28 @@ describe("App", () => {
       describe("upgrade filter", () => {
         const filter = () => screen.getByRole("checkbox", { name: "Only what to upgrade" });
 
+        beforeEach(() => localStorage.clear());
+        afterEach(() => localStorage.clear());
+
+        it("remembers the filter after a reload", async () => {
+          const colonyStore = createMemoryColonyStore();
+          seed(colonyStore, 1, { observatory: [2], mine: [3, 3] });
+          const first = renderPlanner(colonyStore);
+          await userEvent.click(filter());
+          first.unmount();
+
+          const second = renderPlanner(colonyStore);
+
+          expect(filter()).toBeChecked();
+          expect(typeNames()).toEqual(["Cannon"]);
+
+          await userEvent.click(filter());
+          second.unmount();
+          renderPlanner(colonyStore);
+
+          expect(filter()).not.toBeChecked();
+        });
+
         it("shows every type until the filter is switched on", () => {
           renderPlanner();
 
