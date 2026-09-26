@@ -1,0 +1,2267 @@
+{
+  "version": 1,
+  "starBase": [
+    {
+      "level": 1,
+      "time": null,
+      "cost": {},
+      "requirements": {}
+    },
+    {
+      "level": 2,
+      "time": "10m",
+      "cost": {
+        "coins": 4340
+      },
+      "requirements": {}
+    },
+    {
+      "level": 3,
+      "time": "4h",
+      "cost": {
+        "coins": 26040
+      },
+      "requirements": {
+        "starBattery": 1
+      }
+    },
+    {
+      "level": 4,
+      "time": "16h",
+      "cost": {
+        "coins": 148800
+      },
+      "requirements": {
+        "starBattery": 3
+      }
+    },
+    {
+      "level": 5,
+      "time": "2d",
+      "cost": {
+        "coins": 3016600
+      },
+      "requirements": {
+        "starBattery": 4,
+        "manaLight": 1,
+        "colonies": 2
+      }
+    },
+    {
+      "level": 6,
+      "time": "4d",
+      "cost": {
+        "coins": 22551200
+      },
+      "requirements": {
+        "starBattery": 6,
+        "manaLight": 2,
+        "colonies": 3
+      }
+    },
+    {
+      "level": 7,
+      "time": "6d",
+      "cost": {
+        "coins": 42758800
+      },
+      "requirements": {
+        "starBattery": 9,
+        "manaLight": 3,
+        "colonies": 5
+      }
+    },
+    {
+      "level": 8,
+      "time": "8d",
+      "cost": {
+        "coins": 80396400
+      },
+      "requirements": {
+        "starBattery": 12,
+        "manaLight": 5,
+        "colonies": 6
+      }
+    },
+    {
+      "level": 9,
+      "time": "1w 5d",
+      "cost": {
+        "coins": 121000000
+      },
+      "requirements": {
+        "starBattery": 15,
+        "manaLight": 8,
+        "colonies": 7
+      }
+    }
+  ],
+  "buildings": [
+    {
+      "id": "observatory",
+      "name": "Observatory",
+      "category": "Resource",
+      "mainOnly": true,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 4,
+          "maxCount": 1
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 6,
+          "maxCount": 1
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 9,
+          "maxCount": 1
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 11,
+          "maxCount": 1
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 11,
+          "maxCount": 1
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "2d",
+          "cost": {
+            "coins": 750000
+          }
+        },
+        {
+          "level": 2,
+          "time": "3d",
+          "cost": {
+            "coins": 1050000,
+            "minerals": 525000
+          }
+        },
+        {
+          "level": 3,
+          "time": "4d 12h",
+          "cost": {
+            "coins": 1575000,
+            "minerals": 787500
+          }
+        },
+        {
+          "level": 4,
+          "time": "6d 18h",
+          "cost": {
+            "coins": 2362500,
+            "minerals": 1182000
+          }
+        },
+        {
+          "level": 5,
+          "time": "1w 3d 3h",
+          "cost": {
+            "coins": 3545000,
+            "minerals": 1773000
+          }
+        },
+        {
+          "level": 6,
+          "time": "2w 1d 4h",
+          "cost": {
+            "coins": 5381000,
+            "minerals": 2659000
+          }
+        },
+        {
+          "level": 7,
+          "time": "2w 4d 5h",
+          "cost": {
+            "coins": 9570000,
+            "minerals": 4785000
+          }
+        },
+        {
+          "level": 8,
+          "time": "3w 20h",
+          "cost": {
+            "coins": 17225000,
+            "minerals": 8613000
+          }
+        },
+        {
+          "level": 9,
+          "time": "3w 5d 5h",
+          "cost": {
+            "coins": 31000000,
+            "minerals": 15500000
+          }
+        },
+        {
+          "level": 10,
+          "time": "4w 3d 11h",
+          "cost": {
+            "coins": 55800000,
+            "minerals": 27900000
+          }
+        },
+        {
+          "level": 11,
+          "time": "5w 2d 19h",
+          "cost": {
+            "coins": 100000000,
+            "minerals": 50000000
+          }
+        }
+      ]
+    },
+    {
+      "id": "compact-house",
+      "name": "Compact House",
+      "category": "Resource",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 3,
+          "maxCount": 4
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 5,
+          "maxCount": 6
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 7,
+          "maxCount": 8
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 9,
+          "maxCount": 10
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 9,
+          "maxCount": 12
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 9,
+          "maxCount": 12
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 10,
+          "maxCount": 12
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 10,
+          "maxCount": 12
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 11,
+          "maxCount": 12
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "22s",
+          "cost": {
+            "coins": 360
+          }
+        },
+        {
+          "level": 2,
+          "time": "7m 30s",
+          "cost": {
+            "coins": 760
+          }
+        },
+        {
+          "level": 3,
+          "time": "30m",
+          "cost": {
+            "coins": 1580
+          }
+        },
+        {
+          "level": 4,
+          "time": "1h 30m",
+          "cost": {
+            "coins": 3340
+          }
+        },
+        {
+          "level": 5,
+          "time": "3h",
+          "cost": {
+            "coins": 6980
+          }
+        },
+        {
+          "level": 6,
+          "time": "7h 30m",
+          "cost": {
+            "coins": 14700
+          }
+        },
+        {
+          "level": 7,
+          "time": "18h",
+          "cost": {
+            "coins": 30900
+          }
+        },
+        {
+          "level": 8,
+          "time": "1d 12h",
+          "cost": {
+            "coins": 64880
+          }
+        },
+        {
+          "level": 9,
+          "time": "3d",
+          "cost": {
+            "coins": 136280
+          }
+        },
+        {
+          "level": 10,
+          "time": "4d 12h",
+          "cost": {
+            "coins": 287560
+          }
+        },
+        {
+          "level": 11,
+          "time": null,
+          "cost": {
+            "coins": 359450
+          }
+        }
+      ]
+    },
+    {
+      "id": "mine",
+      "name": "Mine",
+      "category": "Resource",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 3,
+          "maxCount": 4
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 5,
+          "maxCount": 6
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 7,
+          "maxCount": 8
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 9,
+          "maxCount": 10
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 9,
+          "maxCount": 12
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 9,
+          "maxCount": 12
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 10,
+          "maxCount": 12
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 10,
+          "maxCount": 12
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 11,
+          "maxCount": 12
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "8s",
+          "cost": {
+            "coins": 120
+          }
+        },
+        {
+          "level": 2,
+          "time": "2m 30s",
+          "cost": {
+            "coins": 240
+          }
+        },
+        {
+          "level": 3,
+          "time": "10m",
+          "cost": {
+            "coins": 520
+          }
+        },
+        {
+          "level": 4,
+          "time": "30m",
+          "cost": {
+            "coins": 1080
+          }
+        },
+        {
+          "level": 5,
+          "time": "1h",
+          "cost": {
+            "coins": 2260
+          }
+        },
+        {
+          "level": 6,
+          "time": "2h 30m",
+          "cost": {
+            "coins": 4470
+          }
+        },
+        {
+          "level": 7,
+          "time": "6h",
+          "cost": {
+            "coins": 9980
+          }
+        },
+        {
+          "level": 8,
+          "time": "12h",
+          "cost": {
+            "coins": 20940
+          }
+        },
+        {
+          "level": 9,
+          "time": "1d",
+          "cost": {
+            "coins": 43960
+          }
+        },
+        {
+          "level": 10,
+          "time": "1d 12h",
+          "cost": {
+            "coins": 92340
+          }
+        },
+        {
+          "level": 11,
+          "time": "1d 12h",
+          "cost": {
+            "coins": 359450
+          }
+        }
+      ]
+    },
+    {
+      "id": "bank",
+      "name": "Bank",
+      "category": "Resource",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 4,
+          "maxCount": 2
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 6,
+          "maxCount": 3
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 8,
+          "maxCount": 4
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 9,
+          "maxCount": 5
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 10,
+          "maxCount": 5
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 10,
+          "maxCount": 5
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 10,
+          "maxCount": 5
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 10,
+          "maxCount": 5
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "10m",
+          "cost": {
+            "coins": 760
+          }
+        },
+        {
+          "level": 2,
+          "time": "15m",
+          "cost": {
+            "coins": 1720
+          }
+        },
+        {
+          "level": 3,
+          "time": "22m 30s",
+          "cost": {
+            "coins": 3460
+          }
+        },
+        {
+          "level": 4,
+          "time": "33m 45s",
+          "cost": {
+            "coins": 6900
+          }
+        },
+        {
+          "level": 5,
+          "time": "50m 37s",
+          "cost": {
+            "coins": 13800
+          }
+        },
+        {
+          "level": 6,
+          "time": "1h 15m",
+          "cost": {
+            "coins": 27600
+          }
+        },
+        {
+          "level": 7,
+          "time": "1h 53m",
+          "cost": {
+            "coins": 55220
+          }
+        },
+        {
+          "level": 8,
+          "time": "2h 50m",
+          "cost": {
+            "coins": 110400
+          }
+        },
+        {
+          "level": 9,
+          "time": "4h 16m",
+          "cost": {
+            "coins": 220880
+          }
+        },
+        {
+          "level": 10,
+          "time": "6h 24m",
+          "cost": {
+            "coins": 441760
+          }
+        }
+      ]
+    },
+    {
+      "id": "silo",
+      "name": "Silo",
+      "category": "Resource",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 4,
+          "maxCount": 2
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 6,
+          "maxCount": 3
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 8,
+          "maxCount": 4
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 9,
+          "maxCount": 5
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 10,
+          "maxCount": 5
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 10,
+          "maxCount": 5
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 10,
+          "maxCount": 5
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 10,
+          "maxCount": 5
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "10m",
+          "cost": {
+            "coins": 760
+          }
+        },
+        {
+          "level": 2,
+          "time": "15m",
+          "cost": {
+            "coins": 1720
+          }
+        },
+        {
+          "level": 3,
+          "time": "22m 30s",
+          "cost": {
+            "coins": 3460
+          }
+        },
+        {
+          "level": 4,
+          "time": "33m 45s",
+          "cost": {
+            "coins": 6900
+          }
+        },
+        {
+          "level": 5,
+          "time": "50m 37s",
+          "cost": {
+            "coins": 13800
+          }
+        },
+        {
+          "level": 6,
+          "time": "1h 15m",
+          "cost": {
+            "coins": 27600
+          }
+        },
+        {
+          "level": 7,
+          "time": "1h 53m",
+          "cost": {
+            "coins": 55220
+          }
+        },
+        {
+          "level": 8,
+          "time": "2h 50m",
+          "cost": {
+            "coins": 110440
+          }
+        },
+        {
+          "level": 9,
+          "time": "4h 16m",
+          "cost": {
+            "coins": 220880
+          }
+        },
+        {
+          "level": 10,
+          "time": "6h 24m",
+          "cost": {
+            "coins": 441760
+          }
+        }
+      ]
+    },
+    {
+      "id": "refinery",
+      "name": "Refinery",
+      "category": "Resource",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 3,
+          "maxCount": 1
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 3,
+          "maxCount": 1
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 4,
+          "maxCount": 1
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 4,
+          "maxCount": 1
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "6h",
+          "cost": {
+            "coins": 62000
+          }
+        },
+        {
+          "level": 2,
+          "time": "18h",
+          "cost": {
+            "coins": 155000
+          }
+        },
+        {
+          "level": 3,
+          "time": "1d 12h",
+          "cost": {
+            "coins": 248000
+          }
+        },
+        {
+          "level": 4,
+          "time": "3d",
+          "cost": {
+            "coins": 372000
+          }
+        }
+      ]
+    },
+    {
+      "id": "alliance-building",
+      "name": "Alliance Building",
+      "category": "Military",
+      "mainOnly": true,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 3,
+          "maxCount": 1
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "15m",
+          "cost": {
+            "coins": 150000
+          }
+        },
+        {
+          "level": 2,
+          "time": "1h",
+          "cost": {
+            "coins": 432000
+          }
+        },
+        {
+          "level": 3,
+          "time": "3h",
+          "cost": {
+            "coins": 782000,
+            "minerals": 670000
+          }
+        }
+      ]
+    },
+    {
+      "id": "training-camp",
+      "name": "Training Camp",
+      "category": "Military",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 3,
+          "maxCount": 2
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "15s",
+          "cost": {
+            "coins": 1300
+          }
+        },
+        {
+          "level": 2,
+          "time": "1h",
+          "cost": {
+            "coins": 3300
+          }
+        },
+        {
+          "level": 3,
+          "time": "12h",
+          "cost": {
+            "coins": 19300
+          }
+        }
+      ]
+    },
+    {
+      "id": "factory",
+      "name": "Factory",
+      "category": "Military",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 3,
+          "maxCount": 2
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "15m",
+          "cost": {
+            "coins": 8100
+          }
+        },
+        {
+          "level": 2,
+          "time": "1h",
+          "cost": {
+            "coins": 26700
+          }
+        },
+        {
+          "level": 3,
+          "time": "12h",
+          "cost": {
+            "coins": 145100
+          }
+        }
+      ]
+    },
+    {
+      "id": "starport",
+      "name": "Starport",
+      "category": "Military",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 3,
+          "maxCount": 2
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "15m",
+          "cost": {
+            "coins": 20020
+          }
+        },
+        {
+          "level": 2,
+          "time": "1h",
+          "cost": {
+            "coins": 95700
+          }
+        },
+        {
+          "level": 3,
+          "time": "12h",
+          "cost": {
+            "coins": 483600
+          }
+        }
+      ]
+    },
+    {
+      "id": "warp-gate",
+      "name": "Warp Gate",
+      "category": "Military",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 5,
+          "maxCount": 3
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 6,
+          "maxCount": 3
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 6,
+          "maxCount": 3
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 6,
+          "maxCount": 3
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 6,
+          "maxCount": 3
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "5m",
+          "cost": {
+            "coins": 1300
+          }
+        },
+        {
+          "level": 2,
+          "time": "1h 15m",
+          "cost": {
+            "coins": 5400
+          }
+        },
+        {
+          "level": 3,
+          "time": "3h",
+          "cost": {
+            "coins": 21400
+          }
+        },
+        {
+          "level": 4,
+          "time": "8h",
+          "cost": {
+            "coins": 85700
+          }
+        },
+        {
+          "level": 5,
+          "time": "20h",
+          "cost": {
+            "coins": 342800
+          }
+        },
+        {
+          "level": 6,
+          "time": "1d 16h",
+          "cost": {
+            "coins": 1371300
+          }
+        }
+      ]
+    },
+    {
+      "id": "laboratory",
+      "name": "Laboratory",
+      "category": "Military",
+      "mainOnly": true,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 3,
+          "maxCount": 1
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 4,
+          "maxCount": 1
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 5,
+          "maxCount": 1
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 6,
+          "maxCount": 1
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 6,
+          "maxCount": 1
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "30m",
+          "cost": {
+            "coins": 62000
+          }
+        },
+        {
+          "level": 2,
+          "time": "1h",
+          "cost": {
+            "coins": 155000
+          }
+        },
+        {
+          "level": 3,
+          "time": null,
+          "cost": {
+            "coins": 248000
+          }
+        },
+        {
+          "level": 4,
+          "time": null,
+          "cost": {
+            "coins": 372000
+          }
+        },
+        {
+          "level": 5,
+          "time": null,
+          "cost": {
+            "coins": 558000
+          }
+        },
+        {
+          "level": 6,
+          "time": null,
+          "cost": {
+            "coins": 744000
+          }
+        }
+      ]
+    },
+    {
+      "id": "cannon-blast",
+      "name": "Cannon Blast",
+      "category": "Tower",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 1,
+          "maxCount": 2
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 2,
+          "maxCount": 3
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 3,
+          "maxCount": 4
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 4,
+          "maxCount": 5
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 5,
+          "maxCount": 6
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 6,
+          "maxCount": 6
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 7,
+          "maxCount": 6
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 10,
+          "maxCount": 6
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 11,
+          "maxCount": 7
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "5m",
+          "cost": {
+            "coins": 1100
+          }
+        },
+        {
+          "level": 2,
+          "time": "15m",
+          "cost": {
+            "coins": 5400,
+            "minerals": 2800
+          }
+        },
+        {
+          "level": 3,
+          "time": "45m",
+          "cost": {
+            "coins": 27100,
+            "minerals": 11600
+          }
+        },
+        {
+          "level": 4,
+          "time": "2h 15m",
+          "cost": {
+            "coins": 135600,
+            "minerals": 58100
+          }
+        },
+        {
+          "level": 5,
+          "time": "6h 45m",
+          "cost": {
+            "coins": 678100,
+            "minerals": 299000
+          }
+        },
+        {
+          "level": 6,
+          "time": "20h 15m",
+          "cost": {
+            "coins": 3390600,
+            "minerals": 1453100
+          }
+        },
+        {
+          "level": 7,
+          "time": "2d",
+          "cost": {
+            "coins": 5076300,
+            "minerals": 1453100
+          }
+        },
+        {
+          "level": 8,
+          "time": "3d",
+          "cost": {
+            "coins": 7595000,
+            "minerals": 1453100
+          }
+        },
+        {
+          "level": 9,
+          "time": "4d",
+          "cost": {
+            "coins": 11408000,
+            "minerals": 1453000
+          }
+        },
+        {
+          "level": 10,
+          "time": "5d 12h",
+          "cost": {
+            "coins": 17143000,
+            "minerals": 1452700
+          }
+        },
+        {
+          "level": 11,
+          "time": "10d",
+          "cost": {
+            "coins": 34286000,
+            "minerals": 5810800,
+            "sphere": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "sniper-tower",
+      "name": "Sniper Tower",
+      "category": "Tower",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 1,
+          "maxCount": 2
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 2,
+          "maxCount": 3
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 3,
+          "maxCount": 4
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 4,
+          "maxCount": 5
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 5,
+          "maxCount": 6
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 6,
+          "maxCount": 6
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 7,
+          "maxCount": 6
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 10,
+          "maxCount": 6
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 11,
+          "maxCount": 7
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "30s",
+          "cost": {
+            "coins": 1100
+          }
+        },
+        {
+          "level": 2,
+          "time": "15m",
+          "cost": {
+            "coins": 5400,
+            "minerals": 2800
+          }
+        },
+        {
+          "level": 3,
+          "time": "45m",
+          "cost": {
+            "coins": 27200,
+            "minerals": 11600
+          }
+        },
+        {
+          "level": 4,
+          "time": "5h",
+          "cost": {
+            "coins": 135600,
+            "minerals": 58100
+          }
+        },
+        {
+          "level": 5,
+          "time": "12h",
+          "cost": {
+            "coins": 678100,
+            "minerals": 290600
+          }
+        },
+        {
+          "level": 6,
+          "time": "1d",
+          "cost": {
+            "coins": 3390600,
+            "minerals": 1453100
+          }
+        },
+        {
+          "level": 7,
+          "time": "2d",
+          "cost": {
+            "coins": 5085900,
+            "minerals": 2179700
+          }
+        },
+        {
+          "level": 8,
+          "time": "3d",
+          "cost": {
+            "coins": 7628800,
+            "minerals": 3269000
+          }
+        },
+        {
+          "level": 9,
+          "time": "4d",
+          "cost": {
+            "coins": 11443700,
+            "minerals": 4905800
+          }
+        },
+        {
+          "level": 10,
+          "time": "5d 12h",
+          "cost": {
+            "coins": 19957800,
+            "minerals": 7347000
+          }
+        },
+        {
+          "level": 11,
+          "time": "7d",
+          "cost": {
+            "coins": 39915600,
+            "minerals": 14694000,
+            "sphere": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "missile-launcher",
+      "name": "Missile Launcher",
+      "category": "Tower",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 4,
+          "maxCount": 2
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 5,
+          "maxCount": 2
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 6,
+          "maxCount": 2
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "5h",
+          "cost": {
+            "coins": 153500
+          }
+        },
+        {
+          "level": 2,
+          "time": "1d",
+          "cost": {
+            "coins": 635500,
+            "minerals": 492900
+          }
+        },
+        {
+          "level": 3,
+          "time": "2d",
+          "cost": {
+            "coins": 1906500,
+            "minerals": 697500
+          }
+        },
+        {
+          "level": 4,
+          "time": "4d",
+          "cost": {
+            "coins": 3394500,
+            "minerals": 1162500
+          }
+        },
+        {
+          "level": 5,
+          "time": "6d",
+          "cost": {
+            "coins": 7595000,
+            "minerals": 1860000
+          }
+        },
+        {
+          "level": 6,
+          "time": "8d",
+          "cost": {
+            "coins": 9300000,
+            "minerals": 3720000,
+            "sphere": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "laser-tower",
+      "name": "Laser Tower",
+      "category": "Tower",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 4,
+          "maxCount": 2
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 5,
+          "maxCount": 2
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 6,
+          "maxCount": 2
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "5h",
+          "cost": {
+            "coins": 135600
+          }
+        },
+        {
+          "level": 2,
+          "time": "1d",
+          "cost": {
+            "coins": 542500,
+            "minerals": 290600
+          }
+        },
+        {
+          "level": 3,
+          "time": "2d",
+          "cost": {
+            "coins": 1625500,
+            "minerals": 697500
+          }
+        },
+        {
+          "level": 4,
+          "time": "4d",
+          "cost": {
+            "coins": 3177500,
+            "minerals": 1162500
+          }
+        },
+        {
+          "level": 5,
+          "time": "6d",
+          "cost": {
+            "coins": 6820000,
+            "minerals": 1860000
+          }
+        },
+        {
+          "level": 6,
+          "time": "8d",
+          "cost": {
+            "coins": 10230000,
+            "minerals": 4650000,
+            "sphere": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "mortar",
+      "name": "Mortar",
+      "category": "Tower",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 3,
+          "maxCount": 2
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 3,
+          "maxCount": 3
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 4,
+          "maxCount": 3
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "5h",
+          "cost": {
+            "coins": 232500
+          }
+        },
+        {
+          "level": 2,
+          "time": "1d",
+          "cost": {
+            "coins": 1162500,
+            "minerals": 697500
+          }
+        },
+        {
+          "level": 3,
+          "time": "2d",
+          "cost": {
+            "coins": 3720000,
+            "minerals": 1488000
+          }
+        },
+        {
+          "level": 4,
+          "time": "6d",
+          "cost": {
+            "coins": 16740000,
+            "minerals": 6138000,
+            "sphere": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "freeze-turret",
+      "name": "Freeze Turret",
+      "category": "Tower",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 3,
+          "maxCount": 3
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 4,
+          "maxCount": 3
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 4,
+          "maxCount": 3
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 5,
+          "maxCount": 3
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "30s",
+          "cost": {
+            "coins": 153000
+          }
+        },
+        {
+          "level": 2,
+          "time": "12h",
+          "cost": {
+            "coins": 355555,
+            "minerals": 5000000
+          }
+        },
+        {
+          "level": 3,
+          "time": "1d 2h 30m",
+          "cost": {
+            "coins": 1111111,
+            "minerals": 7000000
+          }
+        },
+        {
+          "level": 4,
+          "time": "2d 12h 40m",
+          "cost": {
+            "coins": 1888888,
+            "minerals": 12000000
+          }
+        },
+        {
+          "level": 5,
+          "time": "4d",
+          "cost": {
+            "coins": 3222222,
+            "minerals": 30000000,
+            "sphere": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "friends-bunker",
+      "name": "Friends Bunker",
+      "category": "Defense",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 2,
+          "maxCount": 1
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 3,
+          "maxCount": 1
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 3,
+          "maxCount": 1
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "1h",
+          "cost": {
+            "coins": 15000
+          }
+        },
+        {
+          "level": 2,
+          "time": "2d",
+          "cost": {
+            "coins": 3000000,
+            "minerals": 2375000
+          }
+        },
+        {
+          "level": 3,
+          "time": "4d",
+          "cost": {
+            "coins": 8000000,
+            "minerals": 5906250,
+            "sphere": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "defense-bunker",
+      "name": "Defense Bunker",
+      "category": "Defense",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 1,
+          "maxCount": 1
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 2
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 3,
+          "maxCount": 3
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 3,
+          "maxCount": 3
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 3,
+          "maxCount": 4
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 3,
+          "maxCount": 4
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "6h",
+          "cost": {
+            "coins": 437500
+          }
+        },
+        {
+          "level": 2,
+          "time": "12h",
+          "cost": {
+            "coins": 2000000,
+            "minerals": 1687500
+          }
+        },
+        {
+          "level": 3,
+          "time": "1d",
+          "cost": {
+            "coins": 4000000,
+            "minerals": 3000000
+          }
+        }
+      ]
+    },
+    {
+      "id": "walls",
+      "name": "Walls",
+      "category": "Defense",
+      "mainOnly": false,
+      "unlocks": [
+        {
+          "starBase": 1,
+          "maxLevel": 0,
+          "maxCount": 0
+        },
+        {
+          "starBase": 2,
+          "maxLevel": 1,
+          "maxCount": 5
+        },
+        {
+          "starBase": 3,
+          "maxLevel": 1,
+          "maxCount": 10
+        },
+        {
+          "starBase": 4,
+          "maxLevel": 1,
+          "maxCount": 15
+        },
+        {
+          "starBase": 5,
+          "maxLevel": 2,
+          "maxCount": 20
+        },
+        {
+          "starBase": 6,
+          "maxLevel": 2,
+          "maxCount": 25
+        },
+        {
+          "starBase": 7,
+          "maxLevel": 2,
+          "maxCount": 35
+        },
+        {
+          "starBase": 8,
+          "maxLevel": 3,
+          "maxCount": 45
+        },
+        {
+          "starBase": 9,
+          "maxLevel": 3,
+          "maxCount": 50
+        }
+      ],
+      "levels": [
+        {
+          "level": 1,
+          "time": "0s",
+          "cost": {
+            "coins": 300
+          }
+        },
+        {
+          "level": 2,
+          "time": "51m 40s",
+          "cost": {
+            "coins": 2250
+          }
+        },
+        {
+          "level": 3,
+          "time": "17h 13m 20s",
+          "cost": {
+            "coins": 6000
+          }
+        },
+        {
+          "level": 4,
+          "time": "1d 10h 26m 40s",
+          "cost": {
+            "coins": 18000
+          }
+        },
+        {
+          "level": 5,
+          "time": "2d 20h 53m 20s",
+          "cost": {
+            "coins": 27000
+          }
+        },
+        {
+          "level": 6,
+          "time": "3d 11h 20m",
+          "cost": {
+            "coins": 30000
+          }
+        }
+      ]
+    }
+  ]
+}
