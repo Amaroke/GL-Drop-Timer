@@ -9,7 +9,7 @@ import { readFirebaseConfig } from "./config/firebaseConfig.ts";
 import { DROPS } from "./drops.ts";
 import { createLocalStorageColonyStore } from "./store/colonyStore.ts";
 import { createLocalStorageDropStore, type DropStore } from "./store/dropStore.ts";
-import { createAppFirestore } from "./store/firestoreDropStore.ts";
+import { createAppFirestore } from "./store/firestoreDocumentStore.ts";
 import { createFirestoreSyncedDropStore } from "./store/syncedDropStore.ts";
 
 function createStore(app: FirebaseApp | null, auth: AuthService, localStore: DropStore): DropStore {

@@ -33,7 +33,7 @@ function sortedDescending(buildings: ColonyBuildings): ColonyBuildings {
   );
 }
 
-function toColonyEntry(value: unknown): ColonyEntry | null {
+export function toColonyEntry(value: unknown): ColonyEntry | null {
   if (typeof value !== "object" || value === null) return null;
   const { starBaseLevel, buildings = {}, updatedAt } = value as Record<string, unknown>;
   if (!isFiniteNumber(starBaseLevel) || !isFiniteNumber(updatedAt)) return null;
